@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>早押しクイズ</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>早押しクイズ</h1>
+  <div id="register">
+    名前：<input type="text" id="nameInput" />
+    <button onclick="register()">参加</button>
+  </div>
+  <div id="game" style="display:none;">
+    <p id="question"></p>
+    <button onclick="buzz()">早押し！</button>
+    <div id="answerArea" style="display:none;">
+      答え：<input type="text" id="answerInput" />
+      <button onclick="sendAnswer()">送信</button>
+    </div>
+    <p id="status"></p>
+    <div id="scores"></div>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
