@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>リアルタイム通信テスト</title>
+</head>
+<body>
+  <h2>リアルタイム通信テスト</h2>
+  <button onclick="sendHello()">Hello送信</button>
+  <ul id="messages"></ul>
+
+  <script>
+    const socket = new WebSocket(`wss://${window.location.host}`);
+
+    socket.onopen = () => {
+      console.log('接続完了');
+    };
+
+    socket.onmessage = (event) => {
+      const li = document.createElement("li");
+      li.textContent = event.data;
+      document.getElementById("messages").appendChild(li);
+    };
+
+    function sendHello() {
+      socket.send("Hello from client!");
+    }
+  </script>
+</body>
+</html>
