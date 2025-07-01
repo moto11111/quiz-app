@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>待機中</title>
+  <link rel="stylesheet" href="wait.css">
+</head>
+<body>
+  <div class="container">
+    <h2>プレイヤーを待っています...</h2>
+    <div id="player-list">
+      <!-- 接続中のプレイヤーが動的に追加されます -->
+    </div>
+    <div id="host-controls" style="display: none;">
+      <button onclick="startGame()">ゲーム開始</button>
+    </div>
+  </div>
+
+  <script>
+    // プレイヤーの名前の例（仮）
+    const currentPlayer = localStorage.getItem("playerName") || "プレイヤー";
+    const roomName = localStorage.getItem("roomName") || "未定";
+
+    // 仮でプレイヤー名をリストに表示（本番ではWebSocket経由）
+    const playerList = document.getElementById("player-list");
+    const li = document.createElement("div");
+    li.textContent = currentPlayer + " が参加しました";
+    playerList.appendChild(li);
+
+    // 仮のホスト判定（例：ルーム作成者がホスト）
+    const isHost = localStorage.getItem("isHost") === "true";
+    if (isHost) {
+      document.getElementById("host-controls").style.display = "block";
+    }
+
+    function startGame() {
+      // ゲーム開始処理（例：WebSocket経由でサーバーに通知）
+      window.location.href = "/genre.html";
+    }
+  </script>
+</body>
+</html>

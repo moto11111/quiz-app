@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ジャンル選択</title>
+</head>
+<body>
+  <h1>ジャンルを選んでください</h1>
+  <button onclick="sendGenre('anime')">アニメ</button>
+  <button onclick="sendGenre('kihon')">情報系</button>
+  <button onclick="sendGenre('zatsu')">雑学</button>
+
+  <script>
+    const socket = new WebSocket(`ws://${location.host}`);
+    window.socket = socket; // quiz.htmlで再利用できるようにする（簡易）
+
+    function sendGenre(genre) {
+      socket.send(`GENRE:${genre}`);
+      localStorage.setItem("selectedGenre", genre); // クイズ画面で利用
+      window.location.href = "/quiz";
+    }
+  </script>
+</body>
+</html>

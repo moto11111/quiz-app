@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>成績発表</title>
+  <link rel="stylesheet" href="result.css">
+</head>
+<body>
+  <div class="container">
+    <h1>成績発表</h1>
+    <p>あなたの最終スコアは…</p>
+    <h2 id="finalScore">-- 点</h2>
+    <button onclick="goHome()">タイトルへ戻る</button>
+  </div>
+
+  <script>
+    const score = localStorage.getItem("finalScore");
+    document.getElementById("finalScore").textContent = score + " 点";
+
+    function goHome() {
+      localStorage.removeItem("finalScore");
+      window.location.href = "/";
+    }
+  </script>
+</body>
+</html>

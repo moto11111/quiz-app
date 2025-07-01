@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>アバター選択</title>
+  <link rel="stylesheet" href="select.css">
+</head>
+<body>
+  <div class="container">
+    <h2>アバターを選んでください</h2>
+    <div class="avatar-list">
+      <img src="avatar1.png" class="avatar" onclick="selectAvatar('avatar1.png')">
+      <img src="avatar2.png" class="avatar" onclick="selectAvatar('avatar2.png')">
+      <img src="avatar3.png" class="avatar" onclick="selectAvatar('avatar3.png')">
+    </div>
+    <button onclick="confirmAvatar()">決定</button>
+  </div>
+
+  <script>
+    let selectedAvatar = null;
+
+    function selectAvatar(src) {
+      selectedAvatar = src;
+      const avatars = document.querySelectorAll('.avatar');
+      avatars.forEach(avatar => avatar.classList.remove('selected'));
+      event.target.classList.add('selected');
+    }
+
+    function confirmAvatar() {
+      if (!selectedAvatar) {
+        alert("アバターを選んでください。");
+        return;
+      }
+      // ローカルストレージに保存して次画面へ遷移
+      localStorage.setItem("avatar", selectedAvatar);
+      window.location.href = "/waiting.html";
+    }
+  </script>
+</body>
+</html>

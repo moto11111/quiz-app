@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>アバター選択</title>
+  <link rel="stylesheet" href="/select.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>アバター選択</h1>
+    <div class="avatar-list">
+      <div class="avatar" data-avatar="1"><img src="/avatars/avatar1.png" alt="Avatar 1"></div>
+      <div class="avatar" data-avatar="2"><img src="/avatars/avatar2.png" alt="Avatar 2"></div>
+      <div class="avatar" data-avatar="3"><img src="/avatars/avatar3.png" alt="Avatar 3"></div>
+    </div>
+    <button id="confirmBtn">決定</button>
+  </div>
+
+  <script>
+    let selectedAvatar = null;
+
+    document.querySelectorAll('.avatar').forEach(elem => {
+      elem.addEventListener('click', () => {
+        document.querySelectorAll('.avatar').forEach(e => e.classList.remove('selected'));
+        elem.classList.add('selected');
+        selectedAvatar = elem.getAttribute('data-avatar');
+      });
+    });
+
+    document.getElementById('confirmBtn').addEventListener('click', () => {
+      if (!selectedAvatar) {
+        alert("アバターを選んでください");
+        return;
+      }
+      // 必要に応じてサーバへ送信 or 次画面へ遷移
+      window.location.href = "/waiting";
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>クイズ画面</title>
+</head>
+<body>
+  <h1>クイズスタート！</h1>
+  <div id="question">問題を読み込み中...</div>
+
+  <script>
+    let socket = window.socket || new WebSocket(`ws://${location.host}`);
+
+    socket.onmessage = (event) => {
+      if (event.data.startsWith("QUESTION:")) {
+        const q = event.data.replace("QUESTION:", "");
+        document.getElementById("question").textContent = q;
+      }
+    };
+  </script>
+</body>
+</html>

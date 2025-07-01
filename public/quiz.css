@@ -1,0 +1,102 @@
+body {
+    margin: 0;
+    font-family: "Noto Sans JP", sans-serif;
+    background-image: url('../images/文化系の部室（日中）.png');
+    background-size: cover;
+    background-position: center;
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+}
+
+.blackboard {
+    background-color: rgba(20, 20, 20, 0.85);
+    color: white;
+    padding: 20px 30px;
+    border-radius: 20px;
+    position: absolute;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    width: 70%;
+}
+
+.question-number {
+    font-size: 1rem;
+    text-align: right;
+    margin-bottom: 10px;
+}
+
+.question-box {
+    font-size: 1.4rem;
+    font-weight: bold;
+}
+
+.timer-box {
+    position: absolute;
+    bottom: 160px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(255, 255, 255, 0.95);
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.answer-box {
+    position: absolute;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.answer-box input {
+    font-size: 1.2rem;
+    padding: 12px 24px;
+    width: 360px;
+    border: 1px solid #555;
+    border-radius: 10px;
+}
+
+#answer-status {
+    font-size: 0.95rem;
+    margin-bottom: 6px;
+    color: #444;
+    font-weight: bold;
+}
+
+.player {
+    background-color: white;
+    border: 2px solid #333;
+    border-radius: 12px;
+    width: 120px;
+    padding: 10px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.player img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    margin-bottom: 5px;
+}
+
+.player-group-left {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    display: flex;
+    gap: 12px;
+}
+
+.player-right {
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+}

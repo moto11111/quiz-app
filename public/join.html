@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ルーム参加</title>
+  <link rel="stylesheet" href="join.css">
+</head>
+<body>
+  <div class="container">
+    <h2>ルームに参加</h2>
+    <label for="room-name">ルーム名:</label>
+    <input type="text" id="room-name" placeholder="ルーム名を入力">
+
+    <label for="room-pass">パスワード:</label>
+    <input type="password" id="room-pass" placeholder="パスワードを入力（必要な場合）">
+
+    <button onclick="joinRoom()">参加</button>
+  </div>
+
+  <script>
+    function joinRoom() {
+      const name = document.getElementById("room-name").value.trim();
+      const pass = document.getElementById("room-pass").value;
+
+      if (!name) {
+        alert("ルーム名を入力してください。");
+        return;
+      }
+
+      // 実際にはWebSocketなどでサーバに送信する処理に置き換える
+      localStorage.setItem("roomName", name);
+      localStorage.setItem("roomPass", pass);
+      window.location.href = "/waiting.html";
+    }
+  </script>
+</body>
+</html>

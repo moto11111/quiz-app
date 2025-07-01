@@ -1,38 +1,53 @@
-// 必要なモジュール読み込み
 const express = require('express');
-const path = require('path');
-const http = require('http');
-const WebSocket = require('ws'); // ← WebSocket追加（テスト用）
-
 const app = express();
-const server = http.createServer(app); // ← httpサーバを作成
-const wss = new WebSocket.Server({ server }); // ← WebSocketサーバを http サーバに接続（テスト用）
+const path = require('path');
+const fs = require('fs');
+const http = require('http').createServer(app);
+const WebSocket = require('ws');
+const wss = new WebSocket.Server({ server: http });
 
-// public フォルダを公開
 app.use(express.static('public'));
 
-// 各画面へのルーティング
+// HTML画面ルーティング
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public/index.html')));
-app.get('/room', (req, res) => res.sendFile(path.join(__dirname, 'public/room.html')));
-app.get('/avatar', (req, res) => res.sendFile(path.join(__dirname, 'public/avatar.html')));
-app.get('/waiting', (req, res) => res.sendFile(path.join(__dirname, 'public/waiting.html')));
 app.get('/genre', (req, res) => res.sendFile(path.join(__dirname, 'public/genre.html')));
 app.get('/quiz', (req, res) => res.sendFile(path.join(__dirname, 'public/quiz.html')));
-app.get('/result', (req, res) => res.sendFile(path.join(__dirname, 'public/result.html')));
-app.get('/test', (req, res) => res.sendFile(path.join(__dirname, 'public/test.html'))); // ← テスト画面
 
-// WebSocket サーバー処理（テスト用）
+// 問題読み込み関数
+function loadQuestions(genre) {
+  const filePath = path.join(__dirname, 'data', `${genre}.json`);
+  try {
+    const data = fs.readFileSync(filePath, 'utf-8');
+    return JSON.parse(data);
+  } catch (err) {
+    console.error(`[エラー] 問題読み込み失敗: ${err}`);
+    return [];
+  }
+}
+
+// クイズ状態管理
+let currentGenre = 'kihon';
+let currentQuestions = [];
+
 wss.on('connection', (ws) => {
   console.log('クライアント接続');
 
   ws.on('message', (message) => {
-    console.log(`受信: ${message}`);
-    // 接続中の全クライアントに送信
-    wss.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(message);
+    const msg = message.toString();
+    console.log(`受信: ${msg}`);
+
+    if (msg.startsWith('GENRE:')) {
+      const genre = msg.split(':')[1];
+      currentGenre = genre;
+      currentQuestions = loadQuestions(genre);
+      console.log(`[ジャンル選択] ${genre} 読み込み完了 (${currentQuestions.length}問)`);
+
+      if (currentQuestions.length > 0) {
+        ws.send(`QUESTION:${currentQuestions[0].question}`);
+      } else {
+        ws.send("QUESTION:問題がありません");
       }
-    });
+    }
   });
 
   ws.on('close', () => {
@@ -40,8 +55,7 @@ wss.on('connection', (ws) => {
   });
 });
 
-// サーバー起動
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`サーバー起動中: http://localhost:${PORT}`);
+http.listen(PORT, () => {
+  console.log(`サーバー起動: http://localhost:${PORT}`);
 });
