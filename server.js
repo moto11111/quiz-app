@@ -21,6 +21,26 @@ app.get('/result', (req, res) => res.sendFile(path.join(__dirname, 'public/resul
 // ルーム管理用
 const rooms = {}; // { roomId: [socket1, socket2, ...] }
 
+io.on("connection", (socket) => {
+  socket.on("join_room", ({ roomId, isHost }) => {
+    socket.join(roomId);
+    rooms[roomId] = rooms[roomId] || { players: [] };
+    rooms[roomId].players.push(socket.id);
+
+    io.to(roomId).emit("update_player_count", rooms[roomId].players.length);
+
+    socket.on("disconnect", () => {
+      rooms[roomId].players = rooms[roomId].players.filter(id => id !== socket.id);
+      io.to(roomId).emit("update_player_count", rooms[roomId].players.length);
+    });
+  });
+
+  socket.on("start_quiz", (roomId) => {
+    io.to(roomId).emit("start_quiz");
+  });
+});
+
+
 wss.on('connection', (ws) => {
   let currentRoom = null;
   let isHost = false;
@@ -86,6 +106,8 @@ wss.on('connection', (ws) => {
     }
   });
 });
+
+
 
 const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => {

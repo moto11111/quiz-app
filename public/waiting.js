@@ -1,33 +1,30 @@
-const socket = new WebSocket(`ws://${location.host}`);
+const socket = io();
 
-const roomId = sessionStorage.getItem('roomId') || 'default';
-socket.addEventListener('open', () => {
-  socket.send(JSON.stringify({
-    type: 'join-room',
-    roomId: roomId
-  }));
-});
+// URLパラメータからroomIdとroleを取得（例: ?roomId=XXXX&host=true）
+const urlParams = new URLSearchParams(window.location.search);
+const roomId = urlParams.get('roomId');
+const isHost = urlParams.get('host') === 'true';
 
-socket.addEventListener('message', (event) => {
-  const msg = JSON.parse(event.data);
+// ルームID表示
+document.getElementById("room-id").textContent = `ルームID: ${roomId}`;
 
-  if (msg.type === 'user-count') {
-    document.getElementById('userCount').textContent = `現在の人数: ${msg.count}`;
-  }
+// ルームに参加
+socket.emit("join_room", { roomId, isHost });
 
-  if (msg.type === 'you-are-host') {
-    document.getElementById('startButton').style.display = 'block';
-  }
-
-  if (msg.type === 'start-quiz') {
-    // クイズ画面へ遷移
-    window.location.href = '/genre';
+// 人数更新を受信
+socket.on("update_player_count", (count) => {
+  document.getElementById("player-count").textContent = `現在の人数: ${count}`;
+  if (count >= 2 && isHost) {
+    document.getElementById("start-btn").style.display = "block";
   }
 });
 
-document.getElementById('startButton').addEventListener('click', () => {
-  socket.send(JSON.stringify({
-    type: 'start-quiz',
-    roomId: roomId
-  }));
+// 出題開始ボタン押下時
+document.getElementById("start-btn").addEventListener("click", () => {
+  socket.emit("start_quiz", roomId);
 });
+
+socket.on("start_quiz", () => {
+  window.location.href = "/quiz.html";
+});
+

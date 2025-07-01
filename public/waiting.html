@@ -6,14 +6,12 @@
   <link rel="stylesheet" href="wait.css">
 </head>
 <body>
-  <div class="container">
-    <h2>対戦相手を待っています...</h2>
-    <p id="userCount">現在の人数: 1</p>
+  <h1>対戦相手を待っています...</h1>
+  <p id="room-id">ルームID: </p>
+  <p id="player-count">現在の人数: 1</p>
+  <button id="start-btn" style="display: none;">出題開始</button>
 
-    <!-- ホストにだけ表示される出題開始ボタン -->
-    <button id="startButton" style="display: none;">出題開始</button>
-  </div>
-
+  <script src="/socket.io/socket.io.js"></script>
   <script src="waiting.js"></script>
 </body>
 </html>
