@@ -1,34 +1,18 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <title>成績発表</title>
-  <link rel="stylesheet" href="result.css" />
+  <meta charset="UTF-8">
+  <title>成績画面</title>
+  <link rel="stylesheet" href="result.css">
 </head>
 <body>
   <div class="result-container">
-    <h1>成績発表</h1>
+    <h1>結果発表</h1>
     <div id="results"></div>
     <button onclick="location.href='index.html'">タイトルに戻る</button>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-    const resultsDiv = document.getElementById("results");
-
-    socket.on("final-score", (scores) => {
-      resultsDiv.innerHTML = "";
-      const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-      sorted.forEach(([name, score], index) => {
-        const div = document.createElement("div");
-        div.className = "result-item";
-        div.innerHTML = `<strong>${index + 1}位: ${name}</strong> - ${score}点`;
-        resultsDiv.appendChild(div);
-      });
-    });
-
-    socket.emit("get-final-score");
-  </script>
+  <script src="js/result.js"></script>
 </body>
 </html>

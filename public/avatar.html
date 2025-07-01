@@ -3,38 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <title>アバター選択</title>
-  <link rel="stylesheet" href="select.css">
+  <link rel="stylesheet" href="avatar.css">
 </head>
 <body>
   <div class="container">
     <h2>アバターを選んでください</h2>
-    <div class="avatar-list">
-      <img src="avatar1.png" class="avatar" onclick="selectAvatar('avatar1.png')">
-      <img src="avatar2.png" class="avatar" onclick="selectAvatar('avatar2.png')">
-      <img src="avatar3.png" class="avatar" onclick="selectAvatar('avatar3.png')">
+    <div class="avatar-grid" id="avatarGrid">
+      <!-- アバター画像の候補 -->
+      <img src="images/ヒト1.png" class="avatar" alt="avatar1">
+      <img src="images/ヒト2.png" class="avatar" alt="avatar2">
+      <img src="images/ヒト3.png" class="avatar" alt="avatar3">
+      <img src="images/ヒト4.png" class="avatar" alt="avatar4">
+      <img src="images/ヒト5.png" class="avatar" alt="avatar4">
+      <img src="images/ヒト6.png" class="avatar" alt="avatar4">
+      <img src="images/ヒト7.png" class="avatar" alt="avatar4">
+      <img src="images/ヒト8.png" class="avatar" alt="avatar4">
     </div>
-    <button onclick="confirmAvatar()">決定</button>
+    <button id="confirmBtn">決定</button>
   </div>
-
-  <script>
-    let selectedAvatar = null;
-
-    function selectAvatar(src) {
-      selectedAvatar = src;
-      const avatars = document.querySelectorAll('.avatar');
-      avatars.forEach(avatar => avatar.classList.remove('selected'));
-      event.target.classList.add('selected');
-    }
-
-    function confirmAvatar() {
-      if (!selectedAvatar) {
-        alert("アバターを選んでください。");
-        return;
-      }
-      // ローカルストレージに保存して次画面へ遷移
-      localStorage.setItem("avatar", selectedAvatar);
-      window.location.href = "/waiting.html";
-    }
-  </script>
+  <script src="avatar.js"></script>
 </body>
 </html>

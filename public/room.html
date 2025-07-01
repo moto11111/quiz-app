@@ -1,51 +1,15 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>クイズアプリ - ルーム選択</title>
-  <link rel="stylesheet" href="room-select.css">
+  <meta charset="UTF-8" />
+  <title>ルーム画面</title>
+  <link rel="stylesheet" href="room.css" />
 </head>
 <body>
   <div class="container">
-    <h2>ルーム選択</h2>
-
-    <div class="section">
-      <h3>① 新しいルームを作成</h3>
-      <button id="createRoomBtn">ルームを作成</button>
-    </div>
-
-    <div class="section">
-      <h3>② 既存のルームに参加</h3>
-      <input type="text" id="roomInput" placeholder="ルームIDを入力">
-      <button id="joinRoomBtn">ルームに参加</button>
-    </div>
+    <h1>ルーム選択</h1>
+    <button onclick="location.href='create.html'">ルームを作成</button>
+    <button onclick="location.href='join.html'">ルームに参加</button>
   </div>
-
-  <script>
-    // ランダムなルームID生成（6文字）
-    function generateRoomId() {
-      return Math.random().toString(36).substring(2, 8).toUpperCase();
-    }
-
-    // ルーム作成（ホスト）
-    document.getElementById("createRoomBtn").addEventListener("click", () => {
-      const roomId = generateRoomId();
-      sessionStorage.setItem("role", "host");
-      sessionStorage.setItem("roomId", roomId);
-      window.location.href = "/waiting";
-    });
-
-    // ルーム参加（ゲスト）
-    document.getElementById("joinRoomBtn").addEventListener("click", () => {
-      const inputRoomId = document.getElementById("roomInput").value.trim();
-      if (inputRoomId) {
-        sessionStorage.setItem("role", "guest");
-        sessionStorage.setItem("roomId", inputRoomId);
-        window.location.href = "/waiting";
-      } else {
-        alert("ルームIDを入力してください");
-      }
-    });
-  </script>
 </body>
 </html>

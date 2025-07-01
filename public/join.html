@@ -1,27 +1,21 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>ルーム参加</title>
-  <link rel="stylesheet" href="join.css">
+  <meta charset="UTF-8" />
+  <title>ルームに参加</title>
+  <link rel="stylesheet" href="join.css" />
 </head>
 <body>
   <div class="container">
-    <h2>ルームに参加</h2>
-    <input type="text" id="roomIdInput" placeholder="参加するルームIDを入力">
-    <button onclick="joinRoom()">参加して待機</button>
+    <h1>ルームに参加</h1>
+    <label>名前：</label>
+    <input type="text" id="name" placeholder="名前を入力" />
+    <br /><br />
+    <label>ルームID：</label>
+    <input type="text" id="roomId" placeholder="ルームIDを入力" />
+    <br /><br />
+    <button onclick="joinRoom()">参加</button>
   </div>
-
-  <script>
-    function joinRoom() {
-      const roomId = document.getElementById('roomIdInput').value.trim();
-      if (roomId === '') {
-        alert('ルームIDを入力してください');
-        return;
-      }
-      sessionStorage.setItem('roomId', roomId);
-      window.location.href = '/waiting';
-    }
-  </script>
+  <script src="js/join.js"></script>
 </body>
 </html>
