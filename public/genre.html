@@ -3,20 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <title>ジャンル選択</title>
+  <link rel="stylesheet" href="genre.css">
 </head>
 <body>
-  <h1>ジャンルを選んでください</h1>
-  <button onclick="sendGenre('anime')">アニメ</button>
-  <button onclick="sendGenre('kihon')">情報系</button>
-  <button onclick="sendGenre('zatsu')">雑学</button>
+  <div class="container">
+    <h2>ジャンルを選択してください</h2>
+    <div class="genre-buttons">
+      <button onclick="selectGenre('anime')">アニメ</button>
+      <button onclick="selectGenre('zatsu')">雑学</button>
+      <button onclick="selectGenre('kihon')">基本</button>
+    </div>
+  </div>
 
   <script>
-    const socket = new WebSocket(`ws://${location.host}`);
-    window.socket = socket; // quiz.htmlで再利用できるようにする（簡易）
-
-    function sendGenre(genre) {
-      socket.send(`GENRE:${genre}`);
-      localStorage.setItem("selectedGenre", genre); // クイズ画面で利用
+    function selectGenre(genre) {
+      sessionStorage.setItem("genre", genre);
       window.location.href = "/quiz";
     }
   </script>

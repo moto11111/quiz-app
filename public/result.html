@@ -1,26 +1,34 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>成績発表</title>
-  <link rel="stylesheet" href="result.css">
+  <link rel="stylesheet" href="result.css" />
 </head>
 <body>
-  <div class="container">
+  <div class="result-container">
     <h1>成績発表</h1>
-    <p>あなたの最終スコアは…</p>
-    <h2 id="finalScore">-- 点</h2>
-    <button onclick="goHome()">タイトルへ戻る</button>
+    <div id="results"></div>
+    <button onclick="location.href='index.html'">タイトルに戻る</button>
   </div>
 
+  <script src="/socket.io/socket.io.js"></script>
   <script>
-    const score = localStorage.getItem("finalScore");
-    document.getElementById("finalScore").textContent = score + " 点";
+    const socket = io();
+    const resultsDiv = document.getElementById("results");
 
-    function goHome() {
-      localStorage.removeItem("finalScore");
-      window.location.href = "/";
-    }
+    socket.on("final-score", (scores) => {
+      resultsDiv.innerHTML = "";
+      const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+      sorted.forEach(([name, score], index) => {
+        const div = document.createElement("div");
+        div.className = "result-item";
+        div.innerHTML = `<strong>${index + 1}位: ${name}</strong> - ${score}点`;
+        resultsDiv.appendChild(div);
+      });
+    });
+
+    socket.emit("get-final-score");
   </script>
 </body>
 </html>

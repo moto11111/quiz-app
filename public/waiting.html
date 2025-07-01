@@ -2,41 +2,51 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>待機中</title>
+  <title>待機画面</title>
   <link rel="stylesheet" href="wait.css">
 </head>
 <body>
   <div class="container">
-    <h2>プレイヤーを待っています...</h2>
-    <div id="player-list">
-      <!-- 接続中のプレイヤーが動的に追加されます -->
-    </div>
-    <div id="host-controls" style="display: none;">
-      <button onclick="startGame()">ゲーム開始</button>
-    </div>
+    <h2>ルームに待機中...</h2>
+    <p id="roomInfo"></p>
+    <p id="playerCount"></p>
+    <button id="startBtn" style="display: none;">出題開始</button>
   </div>
 
   <script>
-    // プレイヤーの名前の例（仮）
-    const currentPlayer = localStorage.getItem("playerName") || "プレイヤー";
-    const roomName = localStorage.getItem("roomName") || "未定";
+    const role = sessionStorage.getItem("role");
+    const roomId = sessionStorage.getItem("roomId");
+    const playerCountEl = document.getElementById("playerCount");
+    const startBtn = document.getElementById("startBtn");
 
-    // 仮でプレイヤー名をリストに表示（本番ではWebSocket経由）
-    const playerList = document.getElementById("player-list");
-    const li = document.createElement("div");
-    li.textContent = currentPlayer + " が参加しました";
-    playerList.appendChild(li);
+    document.getElementById("roomInfo").textContent = `ルームID: ${roomId}`;
 
-    // 仮のホスト判定（例：ルーム作成者がホスト）
-    const isHost = localStorage.getItem("isHost") === "true";
-    if (isHost) {
-      document.getElementById("host-controls").style.display = "block";
-    }
+    const ws = new WebSocket(`wss://${window.location.host}`);
 
-    function startGame() {
-      // ゲーム開始処理（例：WebSocket経由でサーバーに通知）
-      window.location.href = "/genre.html";
-    }
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ type: "join", roomId, role }));
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+
+      if (data.type === "updatePlayerCount") {
+        playerCountEl.textContent = `現在の参加人数: ${data.count}/${data.max}`;
+
+        // ホストのみ開始ボタン表示
+        if (role === "host" && data.count >= 2) {
+          startBtn.style.display = "block";
+        }
+      }
+
+      if (data.type === "start") {
+        window.location.href = "/genre";
+      }
+    };
+
+    startBtn.onclick = () => {
+      ws.send(JSON.stringify({ type: "start", roomId }));
+    };
   </script>
 </body>
 </html>

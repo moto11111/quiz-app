@@ -3,8 +3,14 @@ const app = express();
 const path = require('path');
 const fs = require('fs');
 const http = require('http').createServer(app);
-const WebSocket = require('ws');
+const WebSocket = require("ws");
 const wss = new WebSocket.Server({ server: http });
+const rooms = {};  // ルームIDごとの接続管理
+
+http.listen(process.env.PORT || 3000, () => {
+  console.log("サーバー起動中");
+});
+
 
 app.use(express.static('public'));
 
@@ -52,6 +58,58 @@ wss.on('connection', (ws) => {
 
   ws.on('close', () => {
     console.log('クライアント切断');
+  });
+});
+
+wss.on("connection", (ws) => {
+  ws.on("message", (data) => {
+    let msg;
+    try {
+      msg = JSON.parse(data);
+    } catch (e) {
+      console.error("不正なJSON:", data);
+      return;
+    }
+
+    if (msg.type === "join_waiting") {
+      const roomId = msg.roomId;
+      if (!rooms[roomId]) {
+        rooms[roomId] = { clients: [], max: 2 };
+      }
+
+      rooms[roomId].clients.push(ws);
+      ws.roomId = roomId;
+
+      // 現在の人数をルーム内全員に通知
+      const count = rooms[roomId].clients.length;
+      rooms[roomId].clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({
+            type: "update_player_count",
+            count: count,
+            max: rooms[roomId].max
+          }));
+        }
+      });
+    }
+
+    if (msg.type === "start_quiz") {
+      const roomId = msg.roomId;
+      if (rooms[roomId]) {
+        rooms[roomId].clients.forEach(client => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({ type: "start_quiz" }));
+          }
+        });
+      }
+    }
+  });
+
+  ws.on("close", () => {
+    const roomId = ws.roomId;
+    if (roomId && rooms[roomId]) {
+      rooms[roomId].clients = rooms[roomId].clients.filter(c => c !== ws);
+    }
   });
 });
 

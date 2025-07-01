@@ -1,22 +1,95 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>クイズ画面</title>
+  <link rel="stylesheet" href="quiz.css" />
 </head>
 <body>
-  <h1>クイズスタート！</h1>
-  <div id="question">問題を読み込み中...</div>
+  <div class="quiz-container">
+    <h1 id="question">問題を読み込み中...</h1>
+    
+    <div class="player-area">
+      <div id="player-info"></div>
+    </div>
 
+    <div class="action-area">
+      <button id="buzz-button">早押し！</button>
+      <div id="answer-area" style="display: none;">
+        <input type="text" id="answer-input" placeholder="回答を入力" />
+        <button id="submit-answer">送信</button>
+      </div>
+    </div>
+
+    <div class="status-area">
+      <p id="status-message"></p>
+      <p id="timer">残り時間: --</p>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
   <script>
-    let socket = window.socket || new WebSocket(`ws://${location.host}`);
+    const socket = io();
+    const buzzButton = document.getElementById("buzz-button");
+    const answerArea = document.getElementById("answer-area");
+    const answerInput = document.getElementById("answer-input");
+    const submitAnswer = document.getElementById("submit-answer");
+    const question = document.getElementById("question");
+    const statusMessage = document.getElementById("status-message");
+    const timer = document.getElementById("timer");
+    const playerInfo = document.getElementById("player-info");
 
-    socket.onmessage = (event) => {
-      if (event.data.startsWith("QUESTION:")) {
-        const q = event.data.replace("QUESTION:", "");
-        document.getElementById("question").textContent = q;
+    buzzButton.addEventListener("click", () => {
+      socket.emit("buzz");
+      buzzButton.disabled = true;
+    });
+
+    submitAnswer.addEventListener("click", () => {
+      const answer = answerInput.value;
+      socket.emit("answer", answer);
+      answerArea.style.display = "none";
+    });
+
+    socket.on("question", (data) => {
+      question.textContent = data.text;
+      buzzButton.disabled = false;
+      answerArea.style.display = "none";
+      answerInput.value = "";
+    });
+
+    socket.on("buzz-winner", (name) => {
+      statusMessage.textContent = `${name} が回答中です`;
+      if (name === sessionStorage.getItem("name")) {
+        answerArea.style.display = "block";
+        answerInput.focus();
+      } else {
+        buzzButton.disabled = true;
       }
-    };
+    });
+
+    socket.on("status", (msg) => {
+      statusMessage.textContent = msg;
+    });
+
+    socket.on("score", (data) => {
+      playerInfo.innerHTML = "";
+      for (const name in data) {
+        const p = document.createElement("p");
+        p.textContent = `${name}: ${data[name]}点`;
+        playerInfo.appendChild(p);
+      }
+    });
+
+    socket.on("timer", (sec) => {
+      timer.textContent = `残り時間: ${sec}秒`;
+    });
+
+    socket.on("game-over", () => {
+      window.location.href = "/result";
+    });
+
+    socket.emit("player-info", sessionStorage.getItem("name"));
   </script>
 </body>
 </html>
