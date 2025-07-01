@@ -7,10 +7,6 @@ const WebSocket = require("ws");
 const wss = new WebSocket.Server({ server: http });
 const rooms = {};  // ルームIDごとの接続管理
 
-http.listen(process.env.PORT || 3000, () => {
-  console.log("サーバー起動中");
-});
-
 
 app.use(express.static('public'));
 
