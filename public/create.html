@@ -7,39 +7,20 @@
 </head>
 <body>
   <div class="container">
-    <h2>ルームを作成</h2>
-    <label for="room-name">ルーム名:</label>
-    <input type="text" id="room-name" placeholder="ルーム名を入力">
-
-    <label for="room-pass">パスワード:</label>
-    <input type="password" id="room-pass" placeholder="任意でパスワードを設定">
-
-    <label for="player-count">プレイヤー数:</label>
-    <select id="player-count">
-      <option value="2">2人</option>
-      <option value="3">3人</option>
-    </select>
-
-    <button onclick="createRoom()">作成</button>
+    <h2>ルーム作成</h2>
+    <input type="text" id="roomIdInput" placeholder="ルームIDを入力">
+    <button onclick="createRoom()">作成して待機</button>
   </div>
 
   <script>
     function createRoom() {
-      const name = document.getElementById("room-name").value.trim();
-      const pass = document.getElementById("room-pass").value;
-      const count = document.getElementById("player-count").value;
-
-      if (!name) {
-        alert("ルーム名を入力してください。");
+      const roomId = document.getElementById('roomIdInput').value.trim();
+      if (roomId === '') {
+        alert('ルームIDを入力してください');
         return;
       }
-
-      // ここでサーバへルーム情報を送信する（WebSocketなどで処理）
-      // 今はローカルストレージで仮保存し、次画面に遷移
-      localStorage.setItem("roomName", name);
-      localStorage.setItem("roomPass", pass);
-      localStorage.setItem("playerCount", count);
-      window.location.href = "/waiting.html";
+      sessionStorage.setItem('roomId', roomId);
+      window.location.href = '/waiting';
     }
   </script>
 </body>

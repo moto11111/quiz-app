@@ -7,46 +7,13 @@
 </head>
 <body>
   <div class="container">
-    <h2>ルームに待機中...</h2>
-    <p id="roomInfo"></p>
-    <p id="playerCount"></p>
-    <button id="startBtn" style="display: none;">出題開始</button>
+    <h2>対戦相手を待っています...</h2>
+    <p id="userCount">現在の人数: 1</p>
+
+    <!-- ホストにだけ表示される出題開始ボタン -->
+    <button id="startButton" style="display: none;">出題開始</button>
   </div>
 
-  <script>
-    const role = sessionStorage.getItem("role");
-    const roomId = sessionStorage.getItem("roomId");
-    const playerCountEl = document.getElementById("playerCount");
-    const startBtn = document.getElementById("startBtn");
-
-    document.getElementById("roomInfo").textContent = `ルームID: ${roomId}`;
-
-    const ws = new WebSocket(`wss://${window.location.host}`);
-
-    ws.onopen = () => {
-      ws.send(JSON.stringify({ type: "join", roomId, role }));
-    };
-
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-
-      if (data.type === "updatePlayerCount") {
-        playerCountEl.textContent = `現在の参加人数: ${data.count}/${data.max}`;
-
-        // ホストのみ開始ボタン表示
-        if (role === "host" && data.count >= 2) {
-          startBtn.style.display = "block";
-        }
-      }
-
-      if (data.type === "start") {
-        window.location.href = "/genre";
-      }
-    };
-
-    startBtn.onclick = () => {
-      ws.send(JSON.stringify({ type: "start", roomId }));
-    };
-  </script>
+  <script src="waiting.js"></script>
 </body>
 </html>

@@ -8,29 +8,19 @@
 <body>
   <div class="container">
     <h2>ルームに参加</h2>
-    <label for="room-name">ルーム名:</label>
-    <input type="text" id="room-name" placeholder="ルーム名を入力">
-
-    <label for="room-pass">パスワード:</label>
-    <input type="password" id="room-pass" placeholder="パスワードを入力（必要な場合）">
-
-    <button onclick="joinRoom()">参加</button>
+    <input type="text" id="roomIdInput" placeholder="参加するルームIDを入力">
+    <button onclick="joinRoom()">参加して待機</button>
   </div>
 
   <script>
     function joinRoom() {
-      const name = document.getElementById("room-name").value.trim();
-      const pass = document.getElementById("room-pass").value;
-
-      if (!name) {
-        alert("ルーム名を入力してください。");
+      const roomId = document.getElementById('roomIdInput').value.trim();
+      if (roomId === '') {
+        alert('ルームIDを入力してください');
         return;
       }
-
-      // 実際にはWebSocketなどでサーバに送信する処理に置き換える
-      localStorage.setItem("roomName", name);
-      localStorage.setItem("roomPass", pass);
-      window.location.href = "/waiting.html";
+      sessionStorage.setItem('roomId', roomId);
+      window.location.href = '/waiting';
     }
   </script>
 </body>
