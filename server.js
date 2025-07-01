@@ -14,6 +14,9 @@ app.use(express.static('public'));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public/index.html')));
 app.get('/genre', (req, res) => res.sendFile(path.join(__dirname, 'public/genre.html')));
 app.get('/quiz', (req, res) => res.sendFile(path.join(__dirname, 'public/quiz.html')));
+app.get('/waiting', (req, res) => {
+res.sendFile(path.join(__dirname, 'public/waiting.html'));
+});
 
 // 問題読み込み関数
 function loadQuestions(genre) {
