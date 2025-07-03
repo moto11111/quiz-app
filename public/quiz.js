@@ -1,35 +1,56 @@
-window.addEventListener('DOMContentLoaded', () => {
-  const genre = sessionStorage.getItem('genre');
-  if (!genre) {
-    alert('ジャンルが選択されていません。');
-    window.location.href = '/genre';
-    return;
-  }
+const socket = new WebSocket(`wss://${location.host}`);
+let questions = [];
 
-  fetch(`/data/${genre}.json`)
-    .then((res) => {
-      if (!res.ok) {
-        throw new Error('問題ファイルの読み込みに失敗しました');
-      }
-      return res.json();
-    })
-    .then((questions) => {
-      displayQuestions(questions);
-    })
-    .catch((err) => {
-      console.error(err);
-      alert('問題の読み込み中にエラーが発生しました');
-    });
+socket.addEventListener("open", () => {
+  const genre = sessionStorage.getItem("genre");
+  const roomId = sessionStorage.getItem("roomId");
+  socket.send(JSON.stringify({ type: "join-room", roomId }));
 });
 
-function displayQuestions(questions) {
-  const container = document.createElement('div');
-  container.style.padding = '20px';
-  document.body.appendChild(container);
+socket.addEventListener("message", (event) => {
+  const msg = JSON.parse(event.data);
 
-  questions.forEach((q, index) => {
-    const p = document.createElement('p');
-    p.textContent = `Q${index + 1}: ${q.question}`;
-    container.appendChild(p);
-  });
+  if (msg.type === "you-are-host") {
+    document.getElementById("startBtn").style.display = "block";
+  }
+
+  if (msg.type === "start-quiz") {
+    showRandomQuestion();
+  }
+});
+
+function fetchQuestions() {
+  const genre = sessionStorage.getItem("genre");
+  fetch(`/data/${genre}.json`)
+    .then((res) => res.json())
+    .then((data) => {
+      questions = data;
+    })
+    .catch((err) => console.error("問題の読み込みに失敗しました", err));
 }
+
+function showRandomQuestion() {
+  const questionBox = document.getElementById("questionBox");
+  questionBox.innerHTML = "";
+  const q = questions[Math.floor(Math.random() * questions.length)];
+
+  let i = 0;
+  const interval = setInterval(() => {
+    if (i < q.question.length) {
+      questionBox.innerHTML += q.question[i];
+      i++;
+    } else {
+      clearInterval(interval);
+    }
+  }, 50); // タイプライター速度（ミリ秒）
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  fetchQuestions();
+
+  const startBtn = document.getElementById("startBtn");
+  startBtn.addEventListener("click", () => {
+    const roomId = sessionStorage.getItem("roomId");
+    socket.send(JSON.stringify({ type: "start-quiz", roomId }));
+  });
+});

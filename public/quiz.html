@@ -1,29 +1,15 @@
 <!DOCTYPE html>
-<script src="quiz.js"></script>
-
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>クイズ画面</title>
+  <title>クイズ</title>
   <link rel="stylesheet" href="quiz.css">
 </head>
 <body>
-  <div class="quiz-container">
-    <div class="question-box">
-      <h2 id="question">問題を読み込み中...</h2>
-    </div>
-    <div class="buzzer-box">
-      <button id="buzzerBtn">早押し！</button>
-    </div>
-    <div class="answer-box" style="display: none;">
-      <input type="text" id="answerInput" placeholder="答えを入力">
-      <button id="submitAnswerBtn">送信</button>
-    </div>
-    <div id="message"></div>
-    <div id="scoreBoard"></div>
-  </div>
+  <h2>問題</h2>
+  <div id="questionBox" style="font-size: 20px; margin-bottom: 20px;"></div>
+  <button id="startBtn" style="display: none;">出題</button>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="js/quiz.js"></script>
+  <script src="quiz.js"></script>
 </body>
 </html>
