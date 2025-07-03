@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <title>ジャンル選択</title>
-  <link rel="stylesheet" href="genre.css" />
 </head>
 <body>
-  <div class="container">
-    <h1>ジャンルを選んでください</h1>
-    <div class="genre-buttons">
-      <button onclick="selectGenre('anime')">アニメ</button>
-      <button onclick="selectGenre('zatsu')">雑学</button>
-      <button onclick="selectGenre('kihon')">情報系</button>
-    </div>
-  </div>
+  <h2>ジャンルを選んでください</h2>
+  <button onclick="selectGenre('anime')">アニメ</button>
+  <button onclick="selectGenre('zatsu')">雑学</button>
+  <button onclick="selectGenre('kihon')">基本</button>
 
-  <script src="js/genre.js"></script>
+  <script>
+    function selectGenre(genre) {
+      sessionStorage.setItem('genre', genre);
+      window.location.href = '/quiz';
+    }
+  </script>
 </body>
 </html>
