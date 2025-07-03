@@ -1,16 +1,15 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <title>クイズアプリ - タイトル</title>
-  <link rel="stylesheet" href="index.css">
-</head>
-<body>
-  <div class="container">
-    <h1 class="title">クイズアプリへようこそ！</h1>
-    <button onclick="location.href='room.html'">はじめる</button>
-    <button onclick="location.href='trial.html'">お試しプレイ</button>
-  </div>
-  <script src="index.js"></script>
-</body>
+    <head>
+        <meta charset="UTF-8" />
+        <title>クイズアプリ - タイトル</title>
+        <link rel="stylesheet" href="/css/index.css" />
+    </head>
+    <body>
+        <div class="container">
+            <h1>クイズへようこそ！</h1>
+            <button onclick="goToRoom()">はじめる</button>
+        </div>
+        <script> function goToRoom() { window.location.href = "/room.html"; } </script>
+    </body>
 </html>

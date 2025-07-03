@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head>
-  <meta charset="UTF-8" />
-  <title>ルーム画面</title>
-  <link rel="stylesheet" href="room.css" />
-</head>
-<body>
-  <div class="container">
-    <h1>ルーム選択</h1>
-    <button onclick="location.href='create.html'">ルームを作成</button>
-    <button onclick="location.href='join.html'">ルームに参加</button>
-  </div>
-</body>
+    <head>
+        <meta charset="UTF-8" />
+        <title>ルーム選択</title>
+        <link rel="stylesheet" href="/css/room.css" />
+    </head>
+    <body>
+        <div class="container">
+            <h2>ルーム選択</h2>
+            <button onclick="goToCreate()">ルームを作成</button>
+            <button onclick="goToJoin()">ルームに参加</button>
+        </div>
+        <script>function goToCreate() { window.location.href = "/create.html"; } function goToJoin() { window.location.href = "/join.html"; } </script>
+    </body>
 </html>
