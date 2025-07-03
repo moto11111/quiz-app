@@ -2,13 +2,13 @@ const express = require('express');
 const app = express();
 const path = require('path');
 const http = require('http').createServer(app);
-const WebSocket = require('ws');
-const wss = new WebSocket.Server({ server: http });
+const { Server } = require('socket.io');
+const io = new Server(http);
 
 // 静的ファイル（HTML/CSS/JS）を public フォルダから配信
 app.use(express.static('public'));
 
-// 各画面へのルーティング（必要に応じて追加）
+// 各画面へのルーティング
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public/index.html')));
 app.get('/room', (req, res) => res.sendFile(path.join(__dirname, 'public/room.html')));
 app.get('/create', (req, res) => res.sendFile(path.join(__dirname, 'public/create.html')));
@@ -19,19 +19,45 @@ app.get('/quiz', (req, res) => res.sendFile(path.join(__dirname, 'public/quiz.ht
 app.get('/result', (req, res) => res.sendFile(path.join(__dirname, 'public/result.html')));
 
 // ルーム管理用
-const rooms = {}; // { roomId: [socket1, socket2, ...] }
+const rooms = {}; // { roomId: [socketId1, socketId2, ...] }
 
 io.on("connection", (socket) => {
   socket.on("join_room", ({ roomId, isHost }) => {
     socket.join(roomId);
-    rooms[roomId] = rooms[roomId] || { players: [] };
+    rooms[roomId] = rooms[roomId] || { players: [], hostId: null };
     rooms[roomId].players.push(socket.id);
 
-    io.to(roomId).emit("update_player_count", rooms[roomId].players.length);
+    // 最初に接続した人をホストにする
+    if (!rooms[roomId].hostId) {
+      rooms[roomId].hostId = socket.id;
+      socket.emit("you_are_host");
+    }
 
+    // 現在の人数を全員に送信
+    const userCount = rooms[roomId].players.length;
+    io.to(roomId).emit("update_player_count", userCount);
+
+    // 切断時の処理
     socket.on("disconnect", () => {
-      rooms[roomId].players = rooms[roomId].players.filter(id => id !== socket.id);
-      io.to(roomId).emit("update_player_count", rooms[roomId].players.length);
+      if (rooms[roomId]) {
+        rooms[roomId].players = rooms[roomId].players.filter(id => id !== socket.id);
+
+        // ホストがいなくなった場合、新しいホストを割り当てる
+        if (rooms[roomId].hostId === socket.id) {
+          rooms[roomId].hostId = rooms[roomId].players[0] || null;
+          if (rooms[roomId].hostId) {
+            io.to(rooms[roomId].hostId).emit("you_are_host");
+          }
+        }
+
+        // 人数更新
+        io.to(roomId).emit("update_player_count", rooms[roomId].players.length);
+
+        // 全員いなくなったらルーム削除
+        if (rooms[roomId].players.length === 0) {
+          delete rooms[roomId];
+        }
+      }
     });
   });
 
@@ -39,75 +65,6 @@ io.on("connection", (socket) => {
     io.to(roomId).emit("start_quiz");
   });
 });
-
-
-wss.on('connection', (ws) => {
-  let currentRoom = null;
-  let isHost = false;
-
-  ws.on('message', (data) => {
-    let msg;
-    try {
-      msg = JSON.parse(data);
-    } catch (e) {
-      console.error('JSON parse error:', e);
-      return;
-    }
-
-    // クライアントがルームに参加
-    if (msg.type === 'join-room') {
-      currentRoom = msg.roomId;
-
-      if (!rooms[currentRoom]) {
-        rooms[currentRoom] = [];
-        isHost = true; // 最初の接続者をホストに
-      }
-
-      rooms[currentRoom].push(ws);
-
-      // 現在の人数をルーム全体に送信
-      const userCount = rooms[currentRoom].length;
-      rooms[currentRoom].forEach(client => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({
-            type: 'user-count',
-            count: userCount
-          }));
-        }
-      });
-
-      // ホストに出題開始ボタンを表示するよう指示
-      if (isHost && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-          type: 'you-are-host'
-        }));
-      }
-    }
-
-    // ホストが出題開始ボタンを押したとき
-    if (msg.type === 'start-quiz' && currentRoom && rooms[currentRoom]) {
-      rooms[currentRoom].forEach(client => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({
-            type: 'start-quiz'
-          }));
-        }
-      });
-    }
-  });
-
-  ws.on('close', () => {
-    if (currentRoom && rooms[currentRoom]) {
-      rooms[currentRoom] = rooms[currentRoom].filter(client => client !== ws);
-      // 0人になったらルーム削除
-      if (rooms[currentRoom].length === 0) {
-        delete rooms[currentRoom];
-      }
-    }
-  });
-});
-
-
 
 const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => {
