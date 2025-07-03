@@ -1,20 +1,20 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>ルーム作成</title>
-  <link rel="stylesheet" href="create.css" />
 </head>
 <body>
-  <div class="container">
-    <h1>ルーム作成</h1>
-    <label>名前を入力してください：</label>
-    <input type="text" id="name" placeholder="名前を入力" />
-    <br /><br />
-    <button onclick="createRoom()">作成</button>
-    <p id="roomIdText" style="margin-top: 20px; font-weight: bold;"></p>
-    <p><a href="waiting.html">ルームへ移動</a></p>
-  </div>
-  <script src="js/create.js"></script>
+  <h2>ルームを作成</h2>
+  <button onclick="createRoom()">ルーム作成</button>
+
+  <script>
+    function createRoom() {
+      const roomId = "room1"; // 仮固定ID
+      sessionStorage.setItem("roomId", roomId);
+      sessionStorage.setItem("isHost", "true");
+      location.href = "/waiting";
+    }
+  </script>
 </body>
 </html>
