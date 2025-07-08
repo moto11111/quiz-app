@@ -1,16 +1,26 @@
 <!DOCTYPE html>
 <html lang="ja">
-    <head>
-        <meta charset="UTF-8" />
-        <title>ルーム選択</title>
-        <link rel="stylesheet" href="/css/room.css" />
-    </head>
-    <body>
-        <div class="container">
-            <h2>ルーム選択</h2>
-            <button onclick="goToCreate()">ルームを作成</button>
-            <button onclick="goToJoin()">ルームに参加</button>
+
+<head>
+    <meta charset="UTF-8">
+    <title>ルーム選択</title>
+    <link rel="stylesheet" href="css/room-select.css">
+</head>
+
+<body>
+    <div class="content">
+        <h1>ルームを選択してください</h1>
+        <div class="buttons">
+            <!-- ホスト or ゲストを選択し、アバター選択へ -->
+            <button onclick="location.href='select.html?mode=host'">ルームを作成</button>
+            <button onclick="location.href='select.html?mode=guest'">ルームに参加</button>
         </div>
-        <script>function goToCreate() { window.location.href = "/create.html"; } function goToJoin() { window.location.href = "/join.html"; } </script>
-    </body>
+    </div>
+</body>
+</body>
+<script src="/socket.io/socket.io.js"></script>
+<script src="js/room.js"></script>
+
+</html>
+
 </html>

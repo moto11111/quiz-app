@@ -1,17 +1,48 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head>
-  <meta charset="UTF-8" />
-  <title>ルーム作成</title>
-  <link rel="stylesheet" href="css/create.css" />
-</head>
-<body>
-  <div class="container">
-    <h2>ルーム作成</h2>
-    <button id="createRoomBtn">ルームを作成する</button>
-    <p id="roomIdDisplay" style="margin-top: 1em;"></p>
-  </div>
 
-  <script src="js/create.js"></script>
+<head>
+  <meta charset="UTF-8">
+  <title>ルーム作成</title>
+  <link rel="stylesheet" href="css/create.css">
+</head>
+
+<body>
+  <h1>ルーム作成</h1>
+  <p id="error-message" style="color:red;"></p>
+
+  <form id="create-form">
+    <label>ルームパスワード（3桁数字）:</label>
+    <input type="text" name="password" maxlength="3" pattern="\d{3}" required>
+    <button type="submit">作成</button>
+  </form>
+
+  <script>
+    document.getElementById('create-form').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const password = this.password.value;
+
+      const res = await fetch('/api/create-room', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        // ルーム作成成功 → 待機画面へ
+        window.location.href = `/wait.html?role=host&password=${encodeURIComponent(password)}`;
+      } else {
+        document.getElementById('error-message').textContent = data.message;
+      }
+    });
+  </script>
 </body>
+</body>
+<script src="/socket.io/socket.io.js"></script>
+<script src="js/create.js"></script> <!-- 必要に応じてJSファイル -->
+
+</html>
+
 </html>

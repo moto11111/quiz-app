@@ -1,15 +1,25 @@
 <!DOCTYPE html>
 <html lang="ja">
-    <head>
-        <meta charset="UTF-8" />
-        <title>クイズアプリ - タイトル</title>
-        <link rel="stylesheet" href="/css/index.css" />
-    </head>
-    <body>
-        <div class="container">
-            <h1>クイズへようこそ！</h1>
-            <button onclick="goToRoom()">はじめる</button>
-        </div>
-        <script> function goToRoom() { window.location.href = "/room.html"; } </script>
-    </body>
+
+<head>
+  <meta charset="UTF-8">
+  <title>早押しクイズアプリ</title>
+  <link rel="stylesheet" href="css/index.css">
+</head>
+
+<body>
+  <div class="title-area">
+    <h1>早押しクイズゲーム</h1>
+    <p>反射神経と知識で勝負だ！</p>
+    <form action="room.html" method="get">
+      <button type="submit">▶ はじめる</button>
+    </form>
+  </div>
+</body>
+</body>
+<script src="/socket.io/socket.io.js"></script>
+<script src="js/index.js"></script> <!-- 必要に応じてJSファイル -->
+
+</html>
+
 </html>

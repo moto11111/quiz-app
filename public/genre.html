@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <title>ジャンル選択</title>
+  <link rel="stylesheet" href="css/genre.css">
+</head>
+
+<body>
+  <div class="genre-container">
+    <div class="genre-frame" id="genre1">
+      <img src="images/genre_zatsu.png" alt="雑学">
+      <div class="genre-label">雑学</div>
+    </div>
+    <div class="genre-frame" id="genre2">
+      <img src="images/genre_anime.png" alt="アニメ">
+      <div class="genre-label">アニメ</div>
+    </div>
+    <div class="genre-frame" id="genre3">
+      <img src="images/genre_kihon.png" alt="基本情報">
+      <div class="genre-label">基本情報</div>
+    </div>
+  </div>
+
+  <div id="countdown" class="countdown-text"></div>
+
+  <script>
+    const frames = [
+      document.getElementById('genre1'),
+      document.getElementById('genre2'),
+      document.getElementById('genre3')
+    ];
+
+    const genreMap = {
+      "雑学": "zatsu",
+      "アニメ": "anime",
+      "基本情報": "kihon"
+    };
+
+    let currentIndex = 0;
+    let interval;
+    let stopIndex;
+
+    function startRoulette() {
+      interval = setInterval(() => {
+        frames.forEach((frame, i) => {
+          frame.classList.toggle('active', i === currentIndex);
+        });
+        currentIndex = (currentIndex + 1) % frames.length;
+      }, 200);
+
+      setTimeout(() => {
+        clearInterval(interval);
+        stopIndex = Math.floor(Math.random() * frames.length);
+
+        frames.forEach((frame, i) => {
+          frame.classList.remove('active');
+          frame.classList.toggle('selected', i === stopIndex);
+        });
+
+        const selectedText = frames[stopIndex].querySelector('.genre-label').textContent.trim();
+        const selectedGenre = genreMap[selectedText];
+        console.log("選ばれたジャンル:", selectedGenre);
+
+        // ローカルストレージに保存して quiz.html 側で取得
+        localStorage.setItem('selectedGenre', selectedGenre);
+
+        // カウントダウンして遷移
+        let countdown = 5;
+        const countdownElement = document.getElementById('countdown');
+
+        const timer = setInterval(() => {
+          countdownElement.textContent = `クイズ開始まで ${countdown} 秒`;
+          countdown--;
+          if (countdown < 0) {
+            clearInterval(timer);
+            window.location.href = "quiz.html"; // quiz.html にジャンプ
+          }
+        }, 1000);
+      }, 4000);
+    }
+
+    window.onload = startRoulette;
+  </script>
+</body>
+</body>
+<script src="/socket.io/socket.io.js"></script>
+<script src="js/genre.js"></script> <!-- 必要に応じてJSファイル -->
+
+</html>
+
+</html>

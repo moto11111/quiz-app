@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>クイズ画面</title>
+  <link rel="stylesheet" href="css/quiz.css" />
+</head>
+
+<body>
+  <!-- 黒板風の背景に問題文 -->
+  <div class="blackboard">
+    <div class="question-number" id="question-number">1/5</div>
+    <div class="question-box" id="question-text"></div>
+  </div>
+
+  <!-- タイマー -->
+  <div class="timer-box" id="timer">残り時間：</div>
+
+  <!-- 回答欄 -->
+  <div class="answer-box" id="answer-box" style="display: none;">
+    <div id="answer-status"></div>
+    <input type="text" id="answer-input" placeholder="回答を入力..." />
+  </div>
+
+  <!-- プレイヤー（左右） -->
+  <div class="player-group-left">
+    <div class="player">
+      <img src="images/ヒト5.png" alt="アバター" />
+      <p>ポイント：0</p>
+      <p>プレイヤー2</p>
+    </div>
+    <div class="player">
+      <img src="images/ヒト3.png" alt="アバター" />
+      <p>ポイント：0</p>
+      <p>プレイヤー3</p>
+    </div>
+  </div>
+
+  <div class="player player-right">
+    <img src="images/ヒト1.png" alt="アバター" />
+    <p>ポイント：0</p>
+    <p>プレイヤー1</p>
+  </div>
+
+  <script src="js/quiz.js"></script>
+</body>
+</body>
+<script src="/socket.io/socket.io.js"></script>
+<script src="js/quiz.js"></script> <!-- 必要に応じてJSファイル -->
+
+</html>
+
+</html>

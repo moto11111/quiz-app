@@ -1,20 +1,42 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head>
-  <meta charset="UTF-8" />
-  <title>ルームに参加</title>
-  <link rel="stylesheet" href="css/join.css" />
-</head>
-<body>
-  <div class="container">
-    <h2>ルームに参加</h2>
-    <form id="join-form">
-      <input type="text" id="roomId" placeholder="ルームIDを入力" required />
-      <button type="submit">参加する</button>
-    </form>
-    <p id="error-message" style="color: red;"></p>
-  </div>
 
-  <script src="js/join.js"></script>
+<head>
+  <meta charset="UTF-8">
+  <title>ルーム参加</title>
+  <link rel="stylesheet" href="css/join.css">
+</head>
+
+<body>
+  <h1>ルーム参加</h1>
+
+  <!-- エラーメッセージ（ダミー） -->
+  <p id="error-message" style="color:red;"></p>
+
+  <form id="join-form">
+    <label>ルームパスワード（3桁数字）:</label>
+    <input type="text" name="password" maxlength="3" pattern="\d{3}" required>
+    <button type="submit">参加</button>
+  </form>
+
+  <script>
+    document.getElementById("join-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const password = this.password.value;
+
+      // ここでパスワード検証や遷移処理を追加（仮）
+      if (password === "123") {
+        window.location.href = "waiting.html";
+      } else {
+        document.getElementById("error-message").textContent = "パスワードが見つかりません。";
+      }
+    });
+  </script>
 </body>
+</body>
+<script src="/socket.io/socket.io.js"></script>
+<script src="js/join.js"></script> <!-- 必要に応じてJSファイル -->
+
+</html>
+
 </html>

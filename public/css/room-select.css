@@ -1,0 +1,56 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-image: url('../images/文化系の部室（日中）.png');
+  background-size: cover;
+  background-position: center;
+  height: 100vh;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  font-family: "Noto Sans JP", sans-serif;
+  color: white;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+}
+
+.content {
+  text-align: center;
+  background-color: rgba(0, 0, 0, 0.4);
+  padding: 50px;
+  border-radius: 16px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+.content h1 {
+  font-size: 2rem;
+  margin-bottom: 40px;
+}
+
+.buttons {
+  display: flex;
+  gap: 40px;
+  justify-content: center;
+}
+
+.buttons button {
+  font-size: 1.2rem;
+  padding: 15px 30px;
+  border: none;
+  border-radius: 12px;
+  background-color: #ff9800;
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.buttons button:hover {
+  background-color: #e68900;
+  transform: scale(1.05);
+}

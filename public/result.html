@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>成績発表</title>
+    <link rel="stylesheet" href="css/result.css">
+</head>
+
+<body>
+    <div class="background"></div>
+    <h1 class="title">成績発表</h1>
+
+    <div class="results-container" id="results">
+        <!-- プレイヤー成績がJSで挿入されます -->
+    </div>
+
+    <a href="index.html" class="home-button">ホーム画面へ戻る</a>
+
+    <script>
+        // 仮のプレイヤーデータ
+        const players = [
+            { name: "プレイヤー1", score: 50, miss: 1, avatar: "../images/ヒト15.png" },
+            { name: "プレイヤー2", score: 30, miss: 2, avatar: "../images/ヒト5.png" },
+            { name: "プレイヤー3", score: 10, miss: 4, avatar: "../images/ヒト3.png" }
+        ];
+
+        // スコア順にソート
+        players.sort((a, b) => b.score - a.score);
+
+        const container = document.getElementById("results");
+        players.forEach((player, index) => {
+            const div = document.createElement("div");
+            div.className = "player-container";
+
+            if (index === 0) {
+                const crown = document.createElement("img");
+                crown.src = "../images/crown.png";
+                crown.alt = "王冠";
+                crown.className = "crown";
+                div.appendChild(crown);
+            }
+
+            const avatar = document.createElement("img");
+            avatar.src = player.avatar;
+            avatar.alt = "アバター";
+            avatar.className = "avatar";
+            div.appendChild(avatar);
+
+            const scoreBox = document.createElement("div");
+            scoreBox.className = "score-box";
+            scoreBox.innerHTML = `
+                順位：${index + 1}位<br>
+                得点：${player.score}点<br>
+                ミス：${player.miss}
+            `;
+            div.appendChild(scoreBox);
+
+            container.appendChild(div);
+        });
+    </script>
+</body>
+</body>
+<script src="/socket.io/socket.io.js"></script>
+<script src="js/result.js"></script>
+
+</html>
+
+</html>
