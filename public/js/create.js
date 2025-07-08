@@ -14,5 +14,5 @@ form.addEventListener("submit", (e) => {
   localStorage.setItem("isHost", "true");
 
   // waiting 画面に遷移
-  window.location.href = "/waiting.html";
+  window.location.href = "/wait.html";
 });
