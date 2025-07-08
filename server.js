@@ -5,6 +5,56 @@ const http = require('http').createServer(app);
 const { Server } = require('socket.io');
 const io = new Server(http);
 
+io.on("connection", (socket) => {
+  // ルーム参加
+  socket.on("join_room", ({ roomId, isHost }) => {
+    socket.join(roomId);
+    rooms[roomId] = rooms[roomId] || { players: [], hostId: null };
+    rooms[roomId].players.push(socket.id);
+
+    // ホスト判定
+    if (!rooms[roomId].hostId && isHost) {
+      rooms[roomId].hostId = socket.id;
+      socket.emit("you_are_host");
+    } else if (rooms[roomId].hostId === socket.id) {
+      socket.emit("you_are_host");
+    }
+
+    // 人数送信
+    io.to(roomId).emit("update_player_count", rooms[roomId].players.length);
+
+    // 切断処理
+    socket.on("disconnect", () => {
+      if (rooms[roomId]) {
+        // プレイヤーリスト更新
+        rooms[roomId].players = rooms[roomId].players.filter(id => id !== socket.id);
+
+        // ホストが抜けた場合、先頭にホスト交代
+        if (rooms[roomId].hostId === socket.id) {
+          rooms[roomId].hostId = rooms[roomId].players[0] || null;
+          if (rooms[roomId].hostId) {
+            io.to(rooms[roomId].hostId).emit("you_are_host");
+          }
+        }
+
+        // 人数再送信
+        io.to(roomId).emit("update_player_count", rooms[roomId].players.length);
+
+        // 全員退出でルーム削除
+        if (rooms[roomId].players.length === 0) {
+          delete rooms[roomId];
+        }
+      }
+    });
+  });
+
+  // クイズ開始通知
+  socket.on("start_quiz", (roomId) => {
+    io.to(roomId).emit("start_quiz");
+  });
+});
+
+
 // 静的ファイル（HTML/CSS/JS）を public フォルダから配信
 app.use(express.static('public'));
 
