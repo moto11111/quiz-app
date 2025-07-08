@@ -1,4 +1,3 @@
-<!-- wait.html -->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -8,10 +7,11 @@
 </head>
 <body>
   <div class="container">
-    <h2>ルームに参加しました</h2>
-    <p id="room-id-display">ルームID: </p>
-    <p id="player-count">参加者: 0人</p>
-    <button id="start-btn" style="display: none;">出題開始</button>
+    <h2>待機中のルーム</h2>
+    <p id="roomIdText"></p>
+    <p>現在の参加人数：<span id="userCount">1</span>/2</p>
+
+    <button id="startButton" disabled style="display:none;">出題開始</button>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
@@ -19,32 +19,33 @@
     const socket = io();
     const urlParams = new URLSearchParams(window.location.search);
     const roomId = urlParams.get('room');
-    const isHost = urlParams.get('host') === '1';
 
-    // 表示
-    document.getElementById('room-id-display').textContent = `ルームID: ${roomId}`;
+    document.getElementById("roomIdText").textContent = `ルームID: ${roomId}`;
 
-    // 参加をサーバーに通知
-    socket.emit("join_room", { roomId, isHost });
+    let isHost = false;
 
-    // 人数更新を受信
-    socket.on("update_player_count", (count) => {
-      document.getElementById("player-count").textContent = `参加者: ${count}人`;
-    });
+    socket.emit("join_room", { roomId });
 
-    // ホストのみ開始ボタン表示
     socket.on("you_are_host", () => {
-      document.getElementById("start-btn").style.display = "block";
+      isHost = true;
+      document.getElementById("startButton").style.display = "block";
     });
 
-    // クイズ開始クリック
-    document.getElementById("start-btn").addEventListener("click", () => {
-      socket.emit("start_quiz", roomId);
+    socket.on("update_player_count", (count) => {
+      document.getElementById("userCount").textContent = count;
+      if (isHost && count >= 2) {
+        document.getElementById("startButton").disabled = false;
+      } else {
+        document.getElementById("startButton").disabled = true;
+      }
     });
 
-    // クイズ開始を受信したら遷移
     socket.on("start_quiz", () => {
-      window.location.href = `/quiz.html?room=${roomId}`;
+      window.location.href = `quiz.html?room=${roomId}`;
+    });
+
+    document.getElementById("startButton").addEventListener("click", () => {
+      socket.emit("start_quiz", roomId);
     });
   </script>
 </body>

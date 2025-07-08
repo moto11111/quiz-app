@@ -4,6 +4,41 @@ const path = require('path');
 const http = require('http').createServer(app);
 const { Server } = require('socket.io');
 const io = new Server(http);
+const rooms = {}; // { roomId: { players: [], hostId: socket.id } }
+
+io.on("connection", (socket) => {
+  socket.on("join_room", ({ roomId }) => {
+    socket.join(roomId);
+    rooms[roomId] = rooms[roomId] || { players: [], hostId: null };
+    rooms[roomId].players.push(socket.id);
+
+    if (!rooms[roomId].hostId) {
+      rooms[roomId].hostId = socket.id;
+      socket.emit("you_are_host");
+    }
+
+    io.to(roomId).emit("update_player_count", rooms[roomId].players.length);
+
+    socket.on("disconnect", () => {
+      if (rooms[roomId]) {
+        rooms[roomId].players = rooms[roomId].players.filter(id => id !== socket.id);
+        if (rooms[roomId].hostId === socket.id) {
+          rooms[roomId].hostId = rooms[roomId].players[0] || null;
+          if (rooms[roomId].hostId) {
+            io.to(rooms[roomId].hostId).emit("you_are_host");
+          }
+        }
+        io.to(roomId).emit("update_player_count", rooms[roomId].players.length);
+        if (rooms[roomId].players.length === 0) delete rooms[roomId];
+      }
+    });
+  });
+
+  socket.on("start_quiz", (roomId) => {
+    io.to(roomId).emit("start_quiz");
+  });
+});
+
 
 io.on("connection", (socket) => {
   // ルーム参加
@@ -67,9 +102,6 @@ app.get('/waiting', (req, res) => res.sendFile(path.join(__dirname, 'public/wait
 app.get('/genre', (req, res) => res.sendFile(path.join(__dirname, 'public/genre.html')));
 app.get('/quiz', (req, res) => res.sendFile(path.join(__dirname, 'public/quiz.html')));
 app.get('/result', (req, res) => res.sendFile(path.join(__dirname, 'public/result.html')));
-
-// ルーム管理用
-const rooms = {}; // { roomId: [socketId1, socketId2, ...] }
 
 io.on("connection", (socket) => {
   socket.on("join_room", ({ roomId, isHost }) => {
