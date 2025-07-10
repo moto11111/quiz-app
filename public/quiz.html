@@ -3,41 +3,34 @@
 <head>
   <meta charset="UTF-8" />
   <title>クイズ画面</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      padding: 40px;
-    }
-    #question {
-      font-size: 24px;
-      margin: 20px 0;
-    }
-    #question-number {
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-    #answer {
-      font-size: 18px;
-      padding: 8px;
-      width: 300px;
-    }
-    #status {
-      margin-top: 20px;
-      font-size: 16px;
-      color: #444;
-    }
-  </style>
+  <link rel="stylesheet" href="css/quiz.css" />
 </head>
 <body>
-  <div id="question-number">1/?</div>
-  <div id="question">問題文が表示されます</div>
-  <input type="text" id="answer" placeholder="回答を入力（Enterで送信）" disabled />
-  <div id="status">状態が表示されます</div>
-  <div id="player-list" style="display: flex; justify-content: center; gap: 20px; margin-top: 30px;"></div>
+  <!-- 問題表示（黒板風） -->
+  <div class="question-number" id="question-number">1/3</div>
+  <div class="question-box" id="question">問題が表示されます</div>
 
+  <!-- タイマー表示 -->
+  <div class="timer-box" id="timer">残り時間：--秒</div>
 
+  <!-- 回答欄 -->
+  <div class="answer-box" id="answer-box">
+    <div id="status"></div>
+    <input type="text" id="answer" placeholder="Enterで早押し → 回答入力" />
+  </div>
+
+  <!-- プレイヤー表示：左 -->
+  <div class="player-group-left" id="player-list">
+    <!-- 他のプレイヤー情報はJSで動的にここに追加 -->
+  </div>
+
+  <!-- 自分プレイヤー表示：右（jsで自分を特定してここに追加してもよい） -->
+  <div class="player player-right" id="self-player">
+    <!-- 自分用プレイヤー表示は必要であればJSで追加 -->
+  </div>
+
+  <!-- ソケット通信とクイズ処理 -->
   <script src="/socket.io/socket.io.js"></script>
-  <script src="quiz.js"></script>
+  <script src="js/quiz.js"></script>
 </body>
 </html>
