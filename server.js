@@ -81,13 +81,19 @@ io.on("connection", (socket) => {
     });
   });
 
-  // クイズ開始
-  socket.on("start_quiz", (roomId) => {
-    if (rooms[roomId]) {
-      rooms[roomId].current = 0;
-      sendQuestion(roomId);
-    }
-  });
+// クイズ開始
+socket.on("start_quiz", (roomId) => {
+  if (rooms[roomId]) {
+    rooms[roomId].current = 0;
+
+    // ✅ ルーム内の全クライアントに「クイズ開始」を通知（画面遷移用）
+    io.to(roomId).emit("start_quiz");
+
+    // ✅ 最初の問題を送信
+    sendQuestion(roomId);
+  }
+});
+
 
   // 早押し
   socket.on("buzz", (roomId) => {
