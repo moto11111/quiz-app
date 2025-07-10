@@ -157,6 +157,30 @@ function sendPlayerList(roomId) {
     }))
   });
 }
+socket.on("join_room", ({ roomId }) => {
+  socket.join(roomId);
+
+  if (!rooms[roomId]) {
+    rooms[roomId] = {
+      players: [],
+      scores: {},
+      info: {},
+      current: 0,
+      buzzed: null,
+      locked: new Set(),
+      hostId: socket.id // ✅ ホストID記録
+    };
+    socket.emit("you_are_host"); // ✅ 初参加者にホスト通知
+  } else if (rooms[roomId].players.length === 0) {
+    rooms[roomId].hostId = socket.id;
+    socket.emit("you_are_host"); // ✅ 再び最初に入ったらホストに
+  }
+
+  rooms[roomId].players.push(socket.id);
+
+  // ...以下略（player情報送信など）
+});
+
 
 // HTMLルーティング
 app.get("/", (_, res) => res.sendFile(path.join(__dirname, "public/index.html")));

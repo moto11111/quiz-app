@@ -46,6 +46,31 @@
 
     document.getElementById("startButton").addEventListener("click", () => {
       socket.emit("start_quiz", roomId);
+
+      // これは既にwaiting.htmlのscript内にあるはずです（もしくは別JSで読み込んでる）
+// 修正ポイントだけ説明します
+
+const socket = io();
+let isHost = false;
+const startButton = document.getElementById("startButton");
+
+// ✅ ホストからの通知を受け取ったら表示＋一旦無効化
+socket.on("you_are_host", () => {
+  isHost = true;
+  startButton.style.display = "block";  // ← 非表示を解除
+  startButton.disabled = true;          // ← まだ人数足りないので無効
+});
+
+// ✅ プレイヤー人数更新時にホストなら有効化する
+socket.on("update_player_count", (count) => {
+  document.getElementById("userCount").textContent = count;
+  if (isHost && count >= 2) {
+    startButton.disabled = false;
+  } else {
+    startButton.disabled = true;
+  }
+});
+
     });
   </script>
 </body>
