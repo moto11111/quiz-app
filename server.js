@@ -9,7 +9,7 @@ const io = new Server(server);
 
 app.use(express.static('public'));
 
-// 問題リスト（ジャンル選択後は差し替え可）
+// 問題リスト
 const questionList = [
   { question: "りんごを英語で？", answer: "apple" },
   { question: "犬を英語で？", answer: "dog" },
@@ -17,7 +17,7 @@ const questionList = [
 ];
 
 // ルームごとの状態
-const rooms = {}; // roomId: { players: [], scores: {}, info: {}, current, buzzed, locked }
+const rooms = {}; // roomId: { players: [], scores: {}, info: {}, current, buzzed, locked, hostId }
 
 io.on("connection", (socket) => {
 
@@ -32,8 +32,13 @@ io.on("connection", (socket) => {
         info: {},
         current: 0,
         buzzed: null,
-        locked: new Set()
+        locked: new Set(),
+        hostId: socket.id // ✅ 初参加者をホストに
       };
+      socket.emit("you_are_host");
+    } else if (!rooms[roomId].hostId) {
+      rooms[roomId].hostId = socket.id;
+      socket.emit("you_are_host");
     }
 
     const room = rooms[roomId];
@@ -45,10 +50,9 @@ io.on("connection", (socket) => {
 
     // プレイヤー情報を送信
     sendPlayerList(roomId);
-
     io.to(roomId).emit("update_player_count", room.players.length);
 
-    // 切断時処理
+    // 切断処理
     socket.on("disconnect", () => {
       if (!rooms[roomId]) return;
 
@@ -58,10 +62,18 @@ io.on("connection", (socket) => {
         delete room.scores[socket.id];
         delete room.info[socket.id];
         room.locked.delete(socket.id);
+
+        // ホストが抜けた場合は交代
+        if (room.hostId === socket.id) {
+          room.hostId = room.players[0] || null;
+          if (room.hostId) {
+            io.to(room.hostId).emit("you_are_host");
+          }
+        }
       }
 
-      io.to(roomId).emit("update_player_count", room.players.length);
       sendPlayerList(roomId);
+      io.to(roomId).emit("update_player_count", room.players.length);
 
       if (room.players.length === 0) {
         delete rooms[roomId];
@@ -77,7 +89,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  // 早押し（buzz）
+  // 早押し
   socket.on("buzz", (roomId) => {
     const room = rooms[roomId];
     if (!room || room.buzzed || room.locked.has(socket.id)) return;
@@ -88,7 +100,7 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("wait");
   });
 
-  // 回答
+  // 回答処理
   socket.on("answer", ({ roomId, answer }) => {
     const room = rooms[roomId];
     if (!room || room.buzzed !== socket.id) return;
@@ -157,30 +169,6 @@ function sendPlayerList(roomId) {
     }))
   });
 }
-socket.on("join_room", ({ roomId }) => {
-  socket.join(roomId);
-
-  if (!rooms[roomId]) {
-    rooms[roomId] = {
-      players: [],
-      scores: {},
-      info: {},
-      current: 0,
-      buzzed: null,
-      locked: new Set(),
-      hostId: socket.id // ✅ ホストID記録
-    };
-    socket.emit("you_are_host"); // ✅ 初参加者にホスト通知
-  } else if (rooms[roomId].players.length === 0) {
-    rooms[roomId].hostId = socket.id;
-    socket.emit("you_are_host"); // ✅ 再び最初に入ったらホストに
-  }
-
-  rooms[roomId].players.push(socket.id);
-
-  // ...以下略（player情報送信など）
-});
-
 
 // HTMLルーティング
 app.get("/", (_, res) => res.sendFile(path.join(__dirname, "public/index.html")));
