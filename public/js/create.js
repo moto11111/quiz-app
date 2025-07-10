@@ -16,3 +16,12 @@ form.addEventListener("submit", (e) => {
   // waiting 画面に遷移
   window.location.href = "/wait.html";
 });
+
+const urlParams = new URLSearchParams(window.location.search);
+const avatar = urlParams.get("avatar");  // 例: "ヒト3.png"
+
+socket.emit("join_room", {
+  roomId,
+  name: プレイヤー名,
+  avatar: avatar  // 取得済みの画像ファイル名（例: "ヒト3.png"）
+});
