@@ -1,6 +1,8 @@
+// server.js
 const express = require('express');
 const path = require('path');
 const http = require('http');
+const fs = require('fs');
 const { Server } = require('socket.io');
 
 const app = express();
@@ -9,23 +11,29 @@ const io = new Server(server);
 
 app.use(express.static('public'));
 
-// 問題リスト
-const questionList = [
-  { question: "りんごを英語で？", answer: "apple" },
-  { question: "犬を英語で？", answer: "dog" },
-  { question: "猫を英語で？", answer: "cat" }
-];
+const DATA_PATH = path.join(__dirname, 'public/data');
 
-// ルームごとの状態
-const rooms = {}; // roomId: { players: [], scores: {}, info: {}, current, buzzed, locked, hostId }
+// ジャンルに応じた問題を読み込む関数
+function loadQuestions(genre) {
+  try {
+    const filePath = path.join(DATA_PATH, `${genre}.json`);
+    const data = fs.readFileSync(filePath, 'utf-8');
+    return JSON.parse(data);
+  } catch (e) {
+    console.error(`❌ 問題読み込み失敗: ${genre}`, e);
+    return [];
+  }
+}
+
+const rooms = {}; // roomId: { players: [], scores: {}, info: {}, current, buzzed, locked, hostId, questions }
 
 io.on("connection", (socket) => {
-
   // ルーム参加
-  socket.on("join_room", ({ roomId, name = "名無し", avatar = "default.png" }) => {
+  socket.on("join_room", ({ roomId, name = "名無し", avatar = "default.png", genre = "kihon" }) => {
     socket.join(roomId);
 
     if (!rooms[roomId]) {
+      const questions = loadQuestions(genre);
       rooms[roomId] = {
         players: [],
         scores: {},
@@ -33,7 +41,8 @@ io.on("connection", (socket) => {
         current: 0,
         buzzed: null,
         locked: new Set(),
-        hostId: socket.id // ✅ 初参加者をホストに
+        hostId: socket.id,
+        questions
       };
       socket.emit("you_are_host");
     } else if (!rooms[roomId].hostId) {
@@ -48,11 +57,9 @@ io.on("connection", (socket) => {
 
     console.log(`[参加] ${socket.id} が ${roomId} に参加（${name}）`);
 
-    // プレイヤー情報を送信
     sendPlayerList(roomId);
     io.to(roomId).emit("update_player_count", room.players.length);
 
-    // 切断処理
     socket.on("disconnect", () => {
       if (!rooms[roomId]) return;
 
@@ -63,7 +70,6 @@ io.on("connection", (socket) => {
         delete room.info[socket.id];
         room.locked.delete(socket.id);
 
-        // ホストが抜けた場合は交代
         if (room.hostId === socket.id) {
           room.hostId = room.players[0] || null;
           if (room.hostId) {
@@ -81,21 +87,14 @@ io.on("connection", (socket) => {
     });
   });
 
-// クイズ開始
-socket.on("start_quiz", (roomId) => {
-  if (rooms[roomId]) {
-    rooms[roomId].current = 0;
+  socket.on("start_quiz", (roomId) => {
+    if (rooms[roomId]) {
+      rooms[roomId].current = 0;
+      io.to(roomId).emit("start_quiz");
+      sendQuestion(roomId);
+    }
+  });
 
-    // ✅ ルーム内の全クライアントに「クイズ開始」を通知（画面遷移用）
-    io.to(roomId).emit("start_quiz");
-
-    // ✅ 最初の問題を送信
-    sendQuestion(roomId);
-  }
-});
-
-
-  // 早押し
   socket.on("buzz", (roomId) => {
     const room = rooms[roomId];
     if (!room || room.buzzed || room.locked.has(socket.id)) return;
@@ -106,12 +105,11 @@ socket.on("start_quiz", (roomId) => {
     socket.to(roomId).emit("wait");
   });
 
-  // 回答処理
   socket.on("answer", ({ roomId, answer }) => {
     const room = rooms[roomId];
     if (!room || room.buzzed !== socket.id) return;
 
-    const q = questionList[room.current];
+    const q = room.questions[room.current];
     const correct = q.answer.toLowerCase();
     const isCorrect = answer.trim().toLowerCase() === correct;
 
@@ -136,7 +134,7 @@ socket.on("start_quiz", (roomId) => {
     if (room.locked.size === room.players.length) {
       room.current++;
       room.locked.clear();
-      if (room.current < questionList.length) {
+      if (room.current < room.questions.length) {
         setTimeout(() => sendQuestion(roomId), 1500);
       } else {
         io.to(roomId).emit("result", { message: "クイズ終了！", player: null });
@@ -145,23 +143,23 @@ socket.on("start_quiz", (roomId) => {
   });
 });
 
-// 問題送信
 function sendQuestion(roomId) {
   const room = rooms[roomId];
   if (!room) return;
 
-  const q = questionList[room.current];
+  const q = room.questions[room.current];
+  if (!q) return;
+
   room.buzzed = null;
   room.locked.clear();
 
   io.to(roomId).emit("question", {
     question: q.question,
     index: room.current + 1,
-    total: questionList.length
+    total: room.questions.length
   });
 }
 
-// プレイヤー一覧送信
 function sendPlayerList(roomId) {
   const room = rooms[roomId];
   if (!room) return;
@@ -176,7 +174,6 @@ function sendPlayerList(roomId) {
   });
 }
 
-// HTMLルーティング
 app.get("/", (_, res) => res.sendFile(path.join(__dirname, "public/index.html")));
 app.get("/quiz", (_, res) => res.sendFile(path.join(__dirname, "public/quiz.html")));
 

@@ -45,6 +45,10 @@
       }
     });
 
+    socket.on("you_are_host", () => {
+    sessionStorage.setItem("isHost", "true");
+    });
+
     // 出題開始通知を受け取ったら画面遷移
     socket.on("start_quiz", () => {
       window.location.href = `quiz.html?room=${roomId}`;

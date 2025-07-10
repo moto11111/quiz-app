@@ -1,3 +1,18 @@
+const selectedGenre = localStorage.getItem("selectedGenre");
+const isHost = sessionStorage.getItem("isHost") === "true";
+
+// ホストのみジャンルに応じて問題データを送信
+if (isHost && selectedGenre) {
+fetch(/data/$,{selectedGenre}.json)
+.then((res) => res.json())
+.then((questions) => {
+socket.emit("send_questions", { roomId, questions });
+})
+.catch((err) => {
+console.error("問題読み込みエラー:", err);
+});
+}
+
 const socket = io();
 const urlParams = new URLSearchParams(window.location.search);
 const roomId = urlParams.get('room');
