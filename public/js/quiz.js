@@ -1,70 +1,82 @@
 const socket = io();
+const urlParams = new URLSearchParams(window.location.search);
+const roomId = urlParams.get('room');
+
 const questionDiv = document.getElementById("question");
-const timerDiv = document.getElementById("timer");
+const questionNumberDiv = document.getElementById("question-number");
 const answerInput = document.getElementById("answer");
 const statusDiv = document.getElementById("status");
 
-let fullText = "";
-let typingIndex = 0;
 let typingInterval;
-let score = 0;
-let canBuzz = true;
+let currentText = "";
+let charIndex = 0;
+let isTypingPaused = false;
 
-socket.on("question", (data) => {
-  fullText = data.question;
-  typingIndex = 0;
-  questionDiv.textContent = "";
-  statusDiv.textContent = "";
-  answerInput.disabled = true;
-  startTyping();
-});
+socket.emit("join_room", { roomId });
 
-socket.on("pause_typing", () => {
+// 問題が届いたらタイプライター表示開始
+socket.on("question", ({ question, index, total }) => {
   clearInterval(typingInterval);
-});
+  currentText = question;
+  charIndex = 0;
+  isTypingPaused = false;
 
-socket.on("resume_typing", () => {
-  startTyping();
-});
-
-socket.on("your_turn", () => {
-  statusDiv.textContent = "あなたが回答者です";
-  answerInput.disabled = false;
-  answerInput.focus();
-  canBuzz = false;
-});
-
-socket.on("wait", () => {
-  statusDiv.textContent = "他の人が回答中…";
+  questionDiv.textContent = "";
+  questionNumberDiv.textContent = `${index}/${total}`;
+  statusDiv.textContent = "";
+  answerInput.value = "";
   answerInput.disabled = true;
-});
 
-socket.on("result", (data) => {
-  statusDiv.textContent = data.message;
-  setTimeout(() => {
-    answerInput.value = "";
-    if (data.next) socket.emit("next_request");
-  }, 2000);
+  startTyping();
 });
 
 function startTyping() {
   typingInterval = setInterval(() => {
-    if (typingIndex < fullText.length) {
-      questionDiv.textContent += fullText[typingIndex++];
+    if (isTypingPaused) return;
+    if (charIndex < currentText.length) {
+      questionDiv.textContent += currentText[charIndex++];
     } else {
       clearInterval(typingInterval);
     }
   }, 70);
 }
 
+// タイピング一時停止
+socket.on("pause_typing", () => {
+  isTypingPaused = true;
+});
+
+// 自分の番
+socket.on("your_turn", () => {
+  statusDiv.textContent = "あなたの番です。回答してください";
+  answerInput.disabled = false;
+  answerInput.focus();
+});
+
+// 他人が回答中
+socket.on("wait", () => {
+  statusDiv.textContent = "他のプレイヤーが回答中です";
+  answerInput.disabled = true;
+});
+
+// 結果表示
+socket.on("result", ({ message, player }) => {
+  statusDiv.textContent = message;
+});
+
+// Buzz（Enterキー）で回答権要求
 window.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && canBuzz) {
-    socket.emit("buzz");
+  if (e.key === "Enter" && answerInput.disabled) {
+    socket.emit("buzz", roomId);
   }
 });
 
+// 回答送信
 answerInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !answerInput.disabled) {
-    socket.emit("answer", answerInput.value.trim());
+    const answer = answerInput.value.trim();
+    if (answer) {
+      socket.emit("answer", { roomId, answer });
+    }
   }
 });
