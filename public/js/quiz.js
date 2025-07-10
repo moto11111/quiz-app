@@ -80,3 +80,23 @@ answerInput.addEventListener("keydown", (e) => {
     }
   }
 });
+
+const playerListDiv = document.getElementById("player-list");
+
+socket.on("players_update", ({ players }) => {
+  playerListDiv.innerHTML = "";
+
+  players.forEach(p => {
+    const playerDiv = document.createElement("div");
+    playerDiv.style.textAlign = "center";
+
+    playerDiv.innerHTML = `
+      <img src="images/${p.avatar}" width="60" height="60"><br>
+      <strong>${p.name}</strong><br>
+      スコア: ${p.score}
+    `;
+
+    playerListDiv.appendChild(playerDiv);
+  });
+});
+

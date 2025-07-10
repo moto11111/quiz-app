@@ -134,6 +134,83 @@ function sendQuestion(roomId) {
   });
 }
 
+// 各ルーム構造
+rooms[roomId] = {
+  players: [],               // socket.id配列
+  scores: {},                // socket.id → 数値
+  info: {},                  // socket.id → { name, avatar }
+  current: 0,
+  buzzed: null,
+  locked: new Set()
+};
+
+socket.on("join_room", ({ roomId, name, avatar }) => {
+  socket.join(roomId);
+
+  if (!rooms[roomId]) {
+    rooms[roomId] = {
+      players: [],
+      scores: {},
+      info: {},
+      current: 0,
+      buzzed: null,
+      locked: new Set()
+    };
+  }
+
+  const room = rooms[roomId];
+
+  room.players.push(socket.id);
+  room.scores[socket.id] = 0;
+  room.info[socket.id] = { name, avatar };
+
+  console.log(`[参加] ${socket.id} が ${roomId} に参加（${name}）`);
+
+  // 現在のプレイヤー一覧を全員に送信
+  io.to(roomId).emit("players_update", {
+    players: room.players.map(id => ({
+      id,
+      name: room.info[id]?.name || "名無し",
+      avatar: room.info[id]?.avatar || "default.png",
+      score: room.scores[id] || 0
+    }))
+  });
+
+  io.to(roomId).emit("update_player_count", room.players.length);
+});
+
+
+// 例：answer 受信時
+socket.on("answer", ({ roomId, answer }) => {
+  const room = rooms[roomId];
+  if (!room || room.buzzed !== socket.id) return;
+
+  const q = questionList[room.current];
+  const correct = q.answer.toLowerCase();
+  const isCorrect = answer.trim().toLowerCase() === correct;
+
+  if (isCorrect) {
+    room.scores[socket.id] += 10;
+    io.to(roomId).emit("result", { message: "正解！ +10点", player: socket.id });
+  } else {
+    room.scores[socket.id] -= 10;
+    room.locked.add(socket.id);
+    io.to(roomId).emit("result", { message: `不正解 -10点`, player: socket.id });
+  }
+
+  // プレイヤー情報再送信（スコア更新）
+  io.to(roomId).emit("players_update", {
+    players: room.players.map(id => ({
+      id,
+      name: room.info[id]?.name || "名無し",
+      avatar: room.info[id]?.avatar || "default.png",
+      score: room.scores[id] || 0
+    }))
+  });
+  
+  // 省略：続きは出題・勝利判定など
+});
+
 // HTMLルーティング
 app.get("/", (_, res) => res.sendFile(path.join(__dirname, "public/index.html")));
 app.get("/quiz", (_, res) => res.sendFile(path.join(__dirname, "public/quiz.html")));
