@@ -51,8 +51,9 @@
 
     // 出題開始通知を受け取ったら画面遷移
     socket.on("start_quiz", () => {
-      window.location.href = `quiz.html?room=${roomId}`;
+      window.location.href = `genre.html?room=${roomId}`;
     });
+
 
     // 出題開始ボタンをクリックしたとき
     startButton.addEventListener("click", () => {
