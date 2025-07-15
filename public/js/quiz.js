@@ -15,6 +15,20 @@ const playerListDiv = document.getElementById("player-list");
 const selfPlayerDiv = document.getElementById("self-player");
 const timerDiv = document.getElementById("timer");
 
+
+if (isHost && genre && roomId) {
+  fetch(`/data/${genre}.json`)
+    .then(res => res.json())
+    .then(questions => {
+      socket.emit("send_questions", { roomId, questions });
+      console.log("✅ 問題データ送信完了");
+    })
+    .catch(err => {
+      console.error("❌ 問題データ送信失敗:", err);
+    });
+}
+
+
 let typingInterval;
 let currentText = "";
 let charIndex = 0;
@@ -190,6 +204,7 @@ socket.on("players_update", ({ players }) => {
       questionDiv.textContent = "問題の読み込みに失敗しました。";
     });
 }
+
 
 });
 
