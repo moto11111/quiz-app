@@ -8,17 +8,13 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// 静的ファイルの提供
 app.use(express.static('public'));
 
-// データファイルのパス
 const DATA_PATH = path.join(__dirname, 'public/data');
 
-// 問題読み込み関数
 function loadQuestions(genre) {
   try {
     const filePath = path.join(DATA_PATH, `${genre}.json`);
-    console.log(`📝 読み込むファイル: ${filePath}`);
     const data = fs.readFileSync(filePath, 'utf-8');
     return JSON.parse(data);
   } catch (e) {
@@ -27,8 +23,7 @@ function loadQuestions(genre) {
   }
 }
 
-// ルーム情報
-const rooms = {}; // roomId: { players: [], scores: {}, info: {}, current, buzzed, locked, hostId, questions }
+const rooms = {};
 
 io.on("connection", (socket) => {
   socket.on("join_room", ({ roomId, name = "名無し", avatar = "default.png", genre = "kihon" }) => {
@@ -44,7 +39,8 @@ io.on("connection", (socket) => {
         buzzed: null,
         locked: new Set(),
         hostId: socket.id,
-        questions
+        questions,
+        genre
       };
       socket.emit("you_are_host");
     } else if (!rooms[roomId].hostId) {
@@ -53,12 +49,12 @@ io.on("connection", (socket) => {
     }
 
     const room = rooms[roomId];
+
     room.players.push(socket.id);
     room.scores[socket.id] = 0;
     room.info[socket.id] = { name, avatar };
 
-    console.log(`[参加] ${socket.id} が ${roomId} に参加（${name}）`);
-
+    console.log(`[参加] ${socket.id} が ${roomId} に参加`);
     sendPlayerList(roomId);
     io.to(roomId).emit("update_player_count", room.players.length);
 
@@ -70,12 +66,12 @@ io.on("connection", (socket) => {
         room.players.splice(index, 1);
         delete room.scores[socket.id];
         delete room.info[socket.id];
-        rooms[roomId].locked.delete(socket.id);
+        room.locked.delete(socket.id);
 
-        if (rooms[roomId].hostId === socket.id) {
-          rooms[roomId].hostId = rooms[roomId].players[0] || null;
-          if (rooms[roomId].hostId) {
-            io.to(rooms[roomId].hostId).emit("you_are_host");
+        if (room.hostId === socket.id) {
+          room.hostId = room.players[0] || null;
+          if (room.hostId) {
+            io.to(room.hostId).emit("you_are_host");
           }
         }
       }
@@ -121,7 +117,7 @@ io.on("connection", (socket) => {
     } else {
       room.scores[socket.id] -= 10;
       room.locked.add(socket.id);
-      io.to(roomId).emit("result", { message: `不正解… -10点`, player: socket.id });
+      io.to(roomId).emit("result", { message: "不正解… -10点", player: socket.id });
     }
 
     sendPlayerList(roomId);
@@ -146,31 +142,8 @@ io.on("connection", (socket) => {
       }
     }
   });
-
-  socket.on("send_questions", ({ roomId, questions }) => {
-  if (!rooms[roomId]) return;
-  rooms[roomId].questions = questions;
-  console.log(`✅ ${roomId} に問題セット完了`);
-});
 });
 
-// プレイヤーリスト送信関数
-function sendPlayerList(roomId) {
-  const room = rooms[roomId];
-  if (!room) return;
-
-  io.to(roomId).emit("players_update", {
-    players: room.players.map(id => ({
-      id,
-      name: room.info[id]?.name || "名無し",
-      avatar: room.info[id]?.avatar || "default.png",
-      score: room.scores[id] || 0
-    }))
-  });
-}
-
-
-// 問題送信関数
 function sendQuestion(roomId) {
   const room = rooms[roomId];
   if (!room || !room.questions || !room.questions[room.current]) return;
@@ -186,7 +159,20 @@ function sendQuestion(roomId) {
   });
 }
 
-// HTMLルーティング
+function sendPlayerList(roomId) {
+  const room = rooms[roomId];
+  if (!room) return;
+
+  io.to(roomId).emit("players_update", {
+    players: room.players.map(id => ({
+      id,
+      name: room.info[id]?.name || "名無し",
+      avatar: room.info[id]?.avatar || "default.png",
+      score: room.scores[id] || 0
+    }))
+  });
+}
+
 app.get("/", (_, res) => res.sendFile(path.join(__dirname, "public/index.html")));
 app.get("/quiz", (_, res) => res.sendFile(path.join(__dirname, "public/quiz.html")));
 
