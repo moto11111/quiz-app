@@ -1,32 +1,19 @@
 const express = require('express');
 const path = require('path');
 const http = require('http');
-const fs = require('fs');
 const { Server } = require('socket.io');
+const fs = require('fs'); // ← これが10行目にあるのはOKです
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
-const fs = require('fs');
-const path = require('path');
-
-function loadQuestions(genre) {
-  try {
-    const filePath = path.join(DATA_PATH, `${genre}.json`);
-    const data = fs.readFileSync(filePath, 'utf-8');
-    return JSON.parse(data);
-  } catch (err) {
-    console.error(`❌ 問題読み込み失敗: ${genre}`, err);
-    return [];
-  }
-}
-
 
 app.use(express.static('public'));
 
+// データフォルダのパスを指定
 const DATA_PATH = path.join(__dirname, 'public/data');
 
-// ジャンルに応じた問題を読み込む関数
+// ジャンルに応じてJSONファイルを読み込む関数
 function loadQuestions(genre) {
   try {
     const filePath = path.join(DATA_PATH, `${genre}.json`);
@@ -38,11 +25,10 @@ function loadQuestions(genre) {
   }
 }
 
-// ルームごとの状態
+// ルーム情報
 const rooms = {}; // roomId: { players: [], scores: {}, info: {}, current, buzzed, locked, hostId, questions }
 
 io.on("connection", (socket) => {
-  // ルーム参加
   socket.on("join_room", ({ roomId, name = "名無し", avatar = "default.png", genre = "kihon" }) => {
     socket.join(roomId);
 
@@ -56,7 +42,7 @@ io.on("connection", (socket) => {
         buzzed: null,
         locked: new Set(),
         hostId: socket.id,
-        questions // ← ジャンルに応じた問題
+        questions
       };
       socket.emit("you_are_host");
     } else if (!rooms[roomId].hostId) {
@@ -68,8 +54,6 @@ io.on("connection", (socket) => {
     room.players.push(socket.id);
     room.scores[socket.id] = 0;
     room.info[socket.id] = { name, avatar };
-
-    console.log(`[参加] ${socket.id} が ${roomId} に参加（${name}）`);
 
     sendPlayerList(roomId);
     io.to(roomId).emit("update_player_count", room.players.length);
@@ -101,7 +85,6 @@ io.on("connection", (socket) => {
     });
   });
 
-  // クイズ開始
   socket.on("start_quiz", (roomId) => {
     if (rooms[roomId]) {
       rooms[roomId].current = 0;
@@ -110,7 +93,6 @@ io.on("connection", (socket) => {
     }
   });
 
-  // 早押し
   socket.on("buzz", (roomId) => {
     const room = rooms[roomId];
     if (!room || room.buzzed || room.locked.has(socket.id)) return;
@@ -121,7 +103,6 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("wait");
   });
 
-  // 回答処理
   socket.on("answer", ({ roomId, answer }) => {
     const room = rooms[roomId];
     if (!room || room.buzzed !== socket.id) return;
@@ -160,14 +141,11 @@ io.on("connection", (socket) => {
   });
 });
 
-// 問題送信
 function sendQuestion(roomId) {
   const room = rooms[roomId];
   if (!room) return;
 
   const q = room.questions[room.current];
-  if (!q) return;
-
   room.buzzed = null;
   room.locked.clear();
 
@@ -178,7 +156,6 @@ function sendQuestion(roomId) {
   });
 }
 
-// プレイヤー一覧送信
 function sendPlayerList(roomId) {
   const room = rooms[roomId];
   if (!room) return;
@@ -193,7 +170,6 @@ function sendPlayerList(roomId) {
   });
 }
 
-// HTMLルーティング
 app.get("/", (_, res) => res.sendFile(path.join(__dirname, "public/index.html")));
 app.get("/quiz", (_, res) => res.sendFile(path.join(__dirname, "public/quiz.html")));
 
