@@ -2,18 +2,19 @@ const express = require('express');
 const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
-const fs = require('fs'); // ← これが10行目にあるのはOKです
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// 静的ファイルの提供
 app.use(express.static('public'));
 
-// データフォルダのパスを指定
+// データファイルのパス
 const DATA_PATH = path.join(__dirname, 'public/data');
 
-// ジャンルに応じてJSONファイルを読み込む関数
+// 問題読み込み関数
 function loadQuestions(genre) {
   try {
     const filePath = path.join(DATA_PATH, `${genre}.json`);
@@ -55,6 +56,8 @@ io.on("connection", (socket) => {
     room.scores[socket.id] = 0;
     room.info[socket.id] = { name, avatar };
 
+    console.log(`[参加] ${socket.id} が ${roomId} に参加（${name}）`);
+
     sendPlayerList(roomId);
     io.to(roomId).emit("update_player_count", room.players.length);
 
@@ -66,12 +69,12 @@ io.on("connection", (socket) => {
         room.players.splice(index, 1);
         delete room.scores[socket.id];
         delete room.info[socket.id];
-        room.locked.delete(socket.id);
+        rooms[roomId].locked.delete(socket.id);
 
-        if (room.hostId === socket.id) {
-          room.hostId = room.players[0] || null;
-          if (room.hostId) {
-            io.to(room.hostId).emit("you_are_host");
+        if (rooms[roomId].hostId === socket.id) {
+          rooms[roomId].hostId = rooms[roomId].players[0] || null;
+          if (rooms[roomId].hostId) {
+            io.to(rooms[roomId].hostId).emit("you_are_host");
           }
         }
       }
@@ -123,9 +126,13 @@ io.on("connection", (socket) => {
     sendPlayerList(roomId);
     room.buzzed = null;
 
+    // 勝利判定
     const winner = Object.entries(room.scores).find(([id, score]) => score >= 50);
     if (winner) {
-      io.to(roomId).emit("result", { message: `🎉 勝者決定！${room.info[winner[0]].name} が50点達成 🎉`, player: winner[0] });
+      io.to(roomId).emit("result", {
+        message: `🎉 勝者決定！${room.info[winner[0]].name} が50点達成 🎉`,
+        player: winner[0]
+      });
       return;
     }
 
@@ -141,6 +148,7 @@ io.on("connection", (socket) => {
   });
 });
 
+// 問題送信関数
 function sendQuestion(roomId) {
   const room = rooms[roomId];
   if (!room) return;
@@ -156,6 +164,7 @@ function sendQuestion(roomId) {
   });
 }
 
+// プレイヤーリスト送信関数
 function sendPlayerList(roomId) {
   const room = rooms[roomId];
   if (!room) return;
@@ -170,6 +179,7 @@ function sendPlayerList(roomId) {
   });
 }
 
+// HTMLルーティング
 app.get("/", (_, res) => res.sendFile(path.join(__dirname, "public/index.html")));
 app.get("/quiz", (_, res) => res.sendFile(path.join(__dirname, "public/quiz.html")));
 

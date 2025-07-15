@@ -1,52 +1,48 @@
-const selectedGenre = localStorage.getItem("selectedGenre");
+const socket = io();
+const urlParams = new URLSearchParams(window.location.search);
+const roomId = urlParams.get('room');
+const genre = localStorage.getItem("selectedGenre") || "kihon";
 const isHost = sessionStorage.getItem("isHost") === "true";
 
-// ホストのみジャンルに応じて問題データを送信
-if (isHost && selectedGenre) {
-fetch(/data/$,{selectedGenre}.json)
-.then((res) => res.json())
-.then((questions) => {
-socket.emit("send_questions", { roomId, questions });
-})
-.catch((err) => {
-console.error("問題読み込みエラー:", err);
-});
-}
+// 自分の名前とアバター（必要に応じて取得して置き換えてください）
+const playerName = "プレイヤー名";
+const playerAvatar = "avatar1.png";
 
-
-// ルームに参加（ジャンル付き）
-socket.emit("join_room", { roomId, genre });
-
-
+// DOM 要素
 const questionDiv = document.getElementById("question");
 const questionNumberDiv = document.getElementById("question-number");
 const answerInput = document.getElementById("answer");
 const statusDiv = document.getElementById("status");
+const playerListDiv = document.getElementById("player-list");
+const selfPlayerDiv = document.getElementById("self-player");
 
-const socket = io();
-const urlParams = new URLSearchParams(window.location.search);
-const roomId = urlParams.get('room');
-
-// 🔽 localStorage からジャンルを取得
-const genre = localStorage.getItem("selectedGenre") || "kihon";
-
-// 🔽 ルーム参加時にジャンルも送信
+// ルームに参加（ジャンル含む）
 socket.emit("join_room", {
   roomId,
-  avatar: "default.png", // 必要に応じて補完
-  genre: genre
+  name: playerName,
+  avatar: playerAvatar,
+  genre
 });
 
+// ホストはジャンルに応じて問題を送信（念のため）
+if (isHost && genre) {
+  fetch(`/data/${genre}.json`)
+    .then(res => res.json())
+    .then((questions) => {
+      socket.emit("send_questions", { roomId, questions });
+    })
+    .catch((err) => {
+      console.error("問題読み込みエラー:", err);
+      questionDiv.textContent = "問題の読み込みに失敗しました。";
+    });
+}
 
-
+// 問題表示関連
 let typingInterval;
 let currentText = "";
 let charIndex = 0;
 let isTypingPaused = false;
 
-socket.emit("join_room", { roomId });
-
-// 問題が届いたらタイプライター表示開始
 socket.on("question", ({ question, index, total }) => {
   clearInterval(typingInterval);
   currentText = question;
@@ -73,30 +69,27 @@ function startTyping() {
   }, 70);
 }
 
-// タイピング一時停止
+// 回答関連イベント
 socket.on("pause_typing", () => {
   isTypingPaused = true;
 });
 
-// 自分の番
 socket.on("your_turn", () => {
   statusDiv.textContent = "あなたの番です。回答してください";
   answerInput.disabled = false;
   answerInput.focus();
 });
 
-// 他人が回答中
 socket.on("wait", () => {
   statusDiv.textContent = "他のプレイヤーが回答中です";
   answerInput.disabled = true;
 });
 
-// 結果表示
 socket.on("result", ({ message, player }) => {
   statusDiv.textContent = message;
 });
 
-// Buzz（Enterキー）で回答権要求
+// Buzz（Enterで早押し）
 window.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && answerInput.disabled) {
     socket.emit("buzz", roomId);
@@ -113,22 +106,25 @@ answerInput.addEventListener("keydown", (e) => {
   }
 });
 
-const playerListDiv = document.getElementById("player-list");
-
+// プレイヤー表示
 socket.on("players_update", ({ players }) => {
   playerListDiv.innerHTML = "";
+  selfPlayerDiv.innerHTML = "";
 
   players.forEach(p => {
-    const playerDiv = document.createElement("div");
-    playerDiv.style.textAlign = "center";
-
-    playerDiv.innerHTML = `
+    const playerHtml = `
       <img src="images/${p.avatar}" width="60" height="60"><br>
       <strong>${p.name}</strong><br>
-      スコア: ${p.score}
+      ポイント：${p.score}
     `;
 
-    playerListDiv.appendChild(playerDiv);
+    if (p.id === socket.id) {
+      selfPlayerDiv.innerHTML = playerHtml;
+    } else {
+      const div = document.createElement("div");
+      div.classList.add("player");
+      div.innerHTML = playerHtml;
+      playerListDiv.appendChild(div);
+    }
   });
 });
-
