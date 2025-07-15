@@ -177,5 +177,19 @@ socket.on("players_update", ({ players }) => {
       playerListDiv.appendChild(div);
     }
   });
+
+  if (isHost && genre) {
+  fetch(`/data/${genre}.json`)
+    .then(res => res.json())
+    .then((questions) => {
+      console.log("📦 問題データ読込成功:", questions); // ← 追加
+      socket.emit("send_questions", { roomId, questions });
+    })
+    .catch((err) => {
+      console.error("❌ 問題読み込みエラー:", err);
+      questionDiv.textContent = "問題の読み込みに失敗しました。";
+    });
+}
+
 });
 

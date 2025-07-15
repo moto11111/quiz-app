@@ -163,6 +163,13 @@ function sendPlayerList(roomId) {
   });
 }
 
+socket.on("send_questions", ({ roomId, questions }) => {
+  if (!rooms[roomId]) return;
+  rooms[roomId].questions = questions;
+  console.log(`✅ ${roomId} に問題セット完了`);
+});
+
+
 // 問題送信関数
 function sendQuestion(roomId) {
   const room = rooms[roomId];
