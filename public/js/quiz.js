@@ -3,20 +3,26 @@ const urlParams = new URLSearchParams(window.location.search);
 const roomId = urlParams.get('room');
 const genre = localStorage.getItem("selectedGenre") || "kihon";
 const isHost = sessionStorage.getItem("isHost") === "true";
+const playerName = sessionStorage.getItem("playerName") || "名無し";
+const playerAvatar = sessionStorage.getItem("playerAvatar") || "default.png";
 
-// 自分の名前とアバター（必要に応じて取得して置き換えてください）
-const playerName = "プレイヤー名";
-const playerAvatar = "avatar1.png";
-
-// DOM 要素
+// DOM
 const questionDiv = document.getElementById("question");
 const questionNumberDiv = document.getElementById("question-number");
 const answerInput = document.getElementById("answer");
 const statusDiv = document.getElementById("status");
 const playerListDiv = document.getElementById("player-list");
 const selfPlayerDiv = document.getElementById("self-player");
+const timerDiv = document.getElementById("timer");
 
-// ルームに参加（ジャンル含む）
+let typingInterval;
+let currentText = "";
+let charIndex = 0;
+let isTypingPaused = false;
+let timeLeft = 10;
+let timerInterval = null;
+
+// ルーム参加
 socket.emit("join_room", {
   roomId,
   name: playerName,
@@ -24,7 +30,7 @@ socket.emit("join_room", {
   genre
 });
 
-// ホストはジャンルに応じて問題を送信（念のため）
+// 問題送信（ホストのみ）
 if (isHost && genre) {
   fetch(`/data/${genre}.json`)
     .then(res => res.json())
@@ -37,14 +43,10 @@ if (isHost && genre) {
     });
 }
 
-// 問題表示関連
-let typingInterval;
-let currentText = "";
-let charIndex = 0;
-let isTypingPaused = false;
-
+// 出題開始受信
 socket.on("question", ({ question, index, total }) => {
   clearInterval(typingInterval);
+  clearInterval(timerInterval);
   currentText = question;
   charIndex = 0;
   isTypingPaused = false;
@@ -55,10 +57,9 @@ socket.on("question", ({ question, index, total }) => {
   answerInput.value = "";
   answerInput.disabled = true;
 
-  startTyping();
-});
+  timeLeft = 10;
+  timerDiv.textContent = `残り時間：${timeLeft}秒`;
 
-function startTyping() {
   typingInterval = setInterval(() => {
     if (isTypingPaused) return;
     if (charIndex < currentText.length) {
@@ -67,29 +68,54 @@ function startTyping() {
       clearInterval(typingInterval);
     }
   }, 70);
-}
 
-// 回答関連イベント
-socket.on("pause_typing", () => {
-  isTypingPaused = true;
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    timerDiv.textContent = `残り時間：${timeLeft}秒`;
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      socket.emit("answer", { roomId, answer: "" }); // 時間切れ回答送信
+    }
+  }, 1000);
 });
 
+// タイピング停止
+socket.on("pause_typing", () => {
+  isTypingPaused = true;
+  clearInterval(timerInterval);
+});
+
+// 回答ターン
 socket.on("your_turn", () => {
   statusDiv.textContent = "あなたの番です。回答してください";
   answerInput.disabled = false;
   answerInput.focus();
+
+  timeLeft = 10;
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    timerDiv.textContent = `残り時間：${timeLeft}秒`;
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      answerInput.disabled = true;
+      socket.emit("answer", { roomId, answer: "" }); // 時間切れ
+    }
+  }, 1000);
 });
 
+// 他人のターン
 socket.on("wait", () => {
   statusDiv.textContent = "他のプレイヤーが回答中です";
   answerInput.disabled = true;
+  clearInterval(timerInterval);
 });
 
-socket.on("result", ({ message, player }) => {
+// 結果
+socket.on("result", ({ message }) => {
   statusDiv.textContent = message;
 });
 
-// Buzz（Enterで早押し）
+// Enterで早押し
 window.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && answerInput.disabled) {
     socket.emit("buzz", roomId);
@@ -102,11 +128,12 @@ answerInput.addEventListener("keydown", (e) => {
     const answer = answerInput.value.trim();
     if (answer) {
       socket.emit("answer", { roomId, answer });
+      clearInterval(timerInterval);
     }
   }
 });
 
-// プレイヤー表示
+// プレイヤー更新
 socket.on("players_update", ({ players }) => {
   playerListDiv.innerHTML = "";
   selfPlayerDiv.innerHTML = "";
@@ -114,7 +141,7 @@ socket.on("players_update", ({ players }) => {
   players.forEach(p => {
     const playerHtml = `
       <img src="images/${p.avatar}" width="60" height="60"><br>
-      <strong>${p.name}</strong><br>
+      <strong>${p.id === socket.id ? "自分" : "相手"}</strong><br>
       ポイント：${p.score}
     `;
 
