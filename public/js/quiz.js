@@ -155,3 +155,27 @@ socket.on("players_update", ({ players }) => {
     }
   });
 });
+socket.on("players_update", ({ players }) => {
+  playerListDiv.innerHTML = "";
+  selfPlayerDiv.innerHTML = "";
+
+  players.forEach(p => {
+    const isSelf = p.id === socket.id;
+    const nameLabel = isSelf ? "自分" : "相手";
+    const playerHtml = `
+      <img src="images/${p.avatar}" width="60" height="60"><br>
+      <strong>${nameLabel}</strong><br>
+      ポイント：${p.score}
+    `;
+
+    if (isSelf) {
+      selfPlayerDiv.innerHTML = playerHtml;
+    } else {
+      const div = document.createElement("div");
+      div.classList.add("player");
+      div.innerHTML = playerHtml;
+      playerListDiv.appendChild(div);
+    }
+  });
+});
+

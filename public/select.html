@@ -47,9 +47,15 @@
             updateAvatar();
         }
 
+
         function confirmAvatar() {
             const selected = avatars[currentIndex];
-            const filename = selected.split('/').pop();
+            const filename = selected.split('/').pop(); // 例: "ヒト1.png"
+            
+            // ✅ アバター名とプレイヤー名を sessionStorage に保存
+            sessionStorage.setItem("playerAvatar", filename);
+            sessionStorage.setItem("playerName", "自分"); // プレイヤー名が選べるなら入力欄から取得
+
             const urlParams = new URLSearchParams(window.location.search);
             const mode = urlParams.get("mode");
 
@@ -61,6 +67,7 @@
                 alert("モードが不明です。room.htmlから遷移してください。");
             }
         }
+
 
         updateAvatar();
     </script>
