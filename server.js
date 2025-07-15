@@ -18,6 +18,7 @@ const DATA_PATH = path.join(__dirname, 'public/data');
 function loadQuestions(genre) {
   try {
     const filePath = path.join(DATA_PATH, `${genre}.json`);
+    console.log(`📝 読み込むファイル: ${filePath}`);
     const data = fs.readFileSync(filePath, 'utf-8');
     return JSON.parse(data);
   } catch (e) {
@@ -126,7 +127,6 @@ io.on("connection", (socket) => {
     sendPlayerList(roomId);
     room.buzzed = null;
 
-    // 勝利判定
     const winner = Object.entries(room.scores).find(([id, score]) => score >= 50);
     if (winner) {
       io.to(roomId).emit("result", {
@@ -148,22 +148,6 @@ io.on("connection", (socket) => {
   });
 });
 
-// 問題送信関数
-function sendQuestion(roomId) {
-  const room = rooms[roomId];
-  if (!room) return;
-
-  const q = room.questions[room.current];
-  room.buzzed = null;
-  room.locked.clear();
-
-  io.to(roomId).emit("question", {
-    question: q.question,
-    index: room.current + 1,
-    total: room.questions.length
-  });
-}
-
 // プレイヤーリスト送信関数
 function sendPlayerList(roomId) {
   const room = rooms[roomId];
@@ -176,6 +160,22 @@ function sendPlayerList(roomId) {
       avatar: room.info[id]?.avatar || "default.png",
       score: room.scores[id] || 0
     }))
+  });
+}
+
+// 問題送信関数
+function sendQuestion(roomId) {
+  const room = rooms[roomId];
+  if (!room || !room.questions || !room.questions[room.current]) return;
+
+  const q = room.questions[room.current];
+  room.buzzed = null;
+  room.locked.clear();
+
+  io.to(roomId).emit("question", {
+    question: q.question,
+    index: room.current + 1,
+    total: room.questions.length
   });
 }
 
