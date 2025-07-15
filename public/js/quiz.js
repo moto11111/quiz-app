@@ -13,14 +13,31 @@ console.error("問題読み込みエラー:", err);
 });
 }
 
-const socket = io();
-const urlParams = new URLSearchParams(window.location.search);
-const roomId = urlParams.get('room');
+
+// ルームに参加（ジャンル付き）
+socket.emit("join_room", { roomId, genre });
+
 
 const questionDiv = document.getElementById("question");
 const questionNumberDiv = document.getElementById("question-number");
 const answerInput = document.getElementById("answer");
 const statusDiv = document.getElementById("status");
+
+const socket = io();
+const urlParams = new URLSearchParams(window.location.search);
+const roomId = urlParams.get('room');
+
+// 🔽 localStorage からジャンルを取得
+const genre = localStorage.getItem("selectedGenre") || "kihon";
+
+// 🔽 ルーム参加時にジャンルも送信
+socket.emit("join_room", {
+  roomId,
+  avatar: "default.png", // 必要に応じて補完
+  genre: genre
+});
+
+
 
 let typingInterval;
 let currentText = "";

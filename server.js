@@ -7,6 +7,20 @@ const { Server } = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
+const fs = require('fs');
+const path = require('path');
+
+function loadQuestions(genre) {
+  try {
+    const filePath = path.join(DATA_PATH, `${genre}.json`);
+    const data = fs.readFileSync(filePath, 'utf-8');
+    return JSON.parse(data);
+  } catch (err) {
+    console.error(`❌ 問題読み込み失敗: ${genre}`, err);
+    return [];
+  }
+}
+
 
 app.use(express.static('public'));
 
