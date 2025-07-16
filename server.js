@@ -1,21 +1,21 @@
-const express = require('express');
-const path = require('path');
-const http = require('http');
-const { Server } = require('socket.io');
-const fs = require('fs');
+// server.js
+const express = require("express");
+const path = require("path");
+const http = require("http");
+const { Server } = require("socket.io");
+const fs = require("fs");
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.use(express.static('public'));
-
-const DATA_PATH = path.join(__dirname, 'public/data');
+app.use(express.static("public"));
+const DATA_PATH = path.join(__dirname, "public/data");
 
 function loadQuestions(genre) {
   try {
     const filePath = path.join(DATA_PATH, `${genre}.json`);
-    const data = fs.readFileSync(filePath, 'utf-8');
+    const data = fs.readFileSync(filePath, "utf-8");
     return JSON.parse(data);
   } catch (e) {
     console.error(`❌ 問題読み込み失敗: ${genre}`, e);
@@ -23,10 +23,10 @@ function loadQuestions(genre) {
   }
 }
 
-const rooms = {};
+const rooms = {}; // { roomId: { ... } }
 
 io.on("connection", (socket) => {
-  socket.on("join_room", ({ roomId, name = "名無し", avatar = "default.png", genre = "kihon" }) => {
+  socket.on("join_room", ({ roomId, avatar = "default.png", genre }) => {
     socket.join(roomId);
 
     if (!rooms[roomId]) {
@@ -39,24 +39,22 @@ io.on("connection", (socket) => {
         buzzed: null,
         locked: new Set(),
         hostId: socket.id,
-        questions,
-        genre
+        genre,
+        questions
       };
       socket.emit("you_are_host");
-    } else if (!rooms[roomId].hostId) {
-      rooms[roomId].hostId = socket.id;
-      socket.emit("you_are_host");
+    } else {
+      socket.emit("you_are_guest");
     }
 
     const room = rooms[roomId];
-
     room.players.push(socket.id);
     room.scores[socket.id] = 0;
-    room.info[socket.id] = { name, avatar };
+    room.info[socket.id] = { avatar };
 
-    console.log(`[参加] ${socket.id} が ${roomId} に参加`);
     sendPlayerList(roomId);
     io.to(roomId).emit("update_player_count", room.players.length);
+    io.to(socket.id).emit("genre_selected", room.genre);
 
     socket.on("disconnect", () => {
       if (!rooms[roomId]) return;
@@ -126,7 +124,7 @@ io.on("connection", (socket) => {
     const winner = Object.entries(room.scores).find(([id, score]) => score >= 50);
     if (winner) {
       io.to(roomId).emit("result", {
-        message: `🎉 勝者決定！${room.info[winner[0]].name} が50点達成 🎉`,
+        message: `🎉 勝者決定！${room.info[winner[0]].avatar} が50点達成 🎉`,
         player: winner[0]
       });
       return;
@@ -146,7 +144,7 @@ io.on("connection", (socket) => {
 
 function sendQuestion(roomId) {
   const room = rooms[roomId];
-  if (!room || !room.questions || !room.questions[room.current]) return;
+  if (!room) return;
 
   const q = room.questions[room.current];
   room.buzzed = null;
@@ -166,7 +164,6 @@ function sendPlayerList(roomId) {
   io.to(roomId).emit("players_update", {
     players: room.players.map(id => ({
       id,
-      name: room.info[id]?.name || "名無し",
       avatar: room.info[id]?.avatar || "default.png",
       score: room.scores[id] || 0
     }))
