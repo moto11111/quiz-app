@@ -1,9 +1,8 @@
-// クイズ画面のJS
+// quiz.js
 const socket = io();
 const urlParams = new URLSearchParams(window.location.search);
 const roomId = urlParams.get("room");
 
-// クイズ画面要素
 const questionDiv = document.getElementById("question");
 const questionNumberDiv = document.getElementById("question-number");
 const answerInput = document.getElementById("answer");
@@ -16,21 +15,18 @@ let currentText = "";
 let charIndex = 0;
 let isTypingPaused = false;
 
-// ホスト判定とジャンル取得
 const isHost = sessionStorage.getItem("isHost") === "true";
 const selectedGenre = localStorage.getItem("selectedGenre") || "kihon";
-
-// アバター名の取得
 const avatar = sessionStorage.getItem("playerAvatar") || "default.png";
 
-// socket接続・ルーム参加
+// 1. ルームに参加
 socket.emit("join_room", {
   roomId,
-  avatar: avatar,
-  genre: selectedGenre
+  avatar,
+  genre: selectedGenre,
 });
 
-// ホストのみが問題を送信
+// 2. ホストのみ問題を送信
 if (isHost && selectedGenre) {
   fetch(`/data/${selectedGenre}.json`)
     .then((res) => res.json())
@@ -44,27 +40,25 @@ if (isHost && selectedGenre) {
 }
 
 let timerInterval;
-let remainingTime = 15; // 15秒の制限時間
+let remainingTime = 15;
 
 function startTimer() {
   const timerDisplay = document.getElementById("timer");
   remainingTime = 15;
   timerDisplay.textContent = `残り時間：${remainingTime}秒`;
-
   clearInterval(timerInterval);
   timerInterval = setInterval(() => {
     remainingTime--;
     timerDisplay.textContent = `残り時間：${remainingTime}秒`;
-
     if (remainingTime <= 0) {
       clearInterval(timerInterval);
-      document.getElementById("answer").disabled = true;
-      document.getElementById("status").textContent = "時間切れです";
+      answerInput.disabled = true;
+      statusDiv.textContent = "時間切れです";
     }
   }, 1000);
 }
 
-// question が届いたときに startTimer を呼び出す
+// 3. 問題受信
 socket.on("question", ({ question, index, total }) => {
   clearInterval(typingInterval);
   currentText = question;
@@ -78,23 +72,7 @@ socket.on("question", ({ question, index, total }) => {
   answerInput.disabled = true;
 
   startTyping();
-  startTimer(); // ← ここを追加
-});
-
-// 問題受信・タイプライター表示
-socket.on("question", ({ question, index, total }) => {
-  clearInterval(typingInterval);
-  currentText = question;
-  charIndex = 0;
-  isTypingPaused = false;
-
-  questionDiv.textContent = "";
-  questionNumberDiv.textContent = `${index}/${total}`;
-  statusDiv.textContent = "";
-  answerInput.value = "";
-  answerInput.disabled = true;
-
-  startTyping();
+  startTimer();
 });
 
 function startTyping() {
@@ -108,7 +86,6 @@ function startTyping() {
   }, 70);
 }
 
-// 回答権獲得・制御
 socket.on("your_turn", () => {
   statusDiv.textContent = "あなたの番です。回答してください";
   answerInput.disabled = false;
@@ -124,19 +101,16 @@ socket.on("pause_typing", () => {
   isTypingPaused = true;
 });
 
-// 結果表示
 socket.on("result", ({ message }) => {
   statusDiv.textContent = message;
 });
 
-// Enterでbuzz
 window.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && answerInput.disabled) {
     socket.emit("buzz", roomId);
   }
 });
 
-// Enterで解答送信
 answerInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !answerInput.disabled) {
     const answer = answerInput.value.trim();
@@ -146,7 +120,6 @@ answerInput.addEventListener("keydown", (e) => {
   }
 });
 
-// プレイヤー情報更新
 socket.on("players_update", ({ players }) => {
   playerListDiv.innerHTML = "";
   selfPlayerDiv.innerHTML = "";
@@ -166,6 +139,4 @@ socket.on("players_update", ({ players }) => {
       playerListDiv.appendChild(div);
     }
   });
-
-  
 });
