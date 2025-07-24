@@ -1,24 +1,21 @@
+// js/join.js
 const socket = io();
 const form = document.getElementById("joinForm");
 
 form.addEventListener("submit", (e) => {
   e.preventDefault();
 
-  const roomId = document.getElementById("roomId").value || "defaultRoom";
+  const roomId = "defaultRoom"; // 実質的に固定
+  const avatar = "avatar1.png"; // アバターは選択可能にする場合、変更してください
 
-  // avatarはselect.htmlなどで事前にsessionStorageに保存されている前提
-  const avatar = sessionStorage.getItem("playerAvatar") || "default.png";
-
-  // sessionStorage に保存（統一）
-  sessionStorage.setItem("roomId", roomId);
+  // ルーム情報保存
   sessionStorage.setItem("isHost", "false");
+  sessionStorage.setItem("playerAvatar", avatar);
+  localStorage.setItem("roomId", roomId);
 
-  // socket接続してルーム参加を通知
-  socket.emit("join_room", {
-    roomId: roomId,
-    avatar: avatar
-  });
+  // サーバーに参加を通知
+  socket.emit("join_room", { roomId, avatar });
 
   // 待機画面へ遷移
-  window.location.href = `wait.html?room=${encodeURIComponent(roomId)}`;
+  window.location.href = "/wait.html";
 });

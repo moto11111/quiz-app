@@ -8,14 +8,10 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// 静的ファイル
 app.use(express.static("public"));
-
-// データディレクトリ
 const DATA_PATH = path.join(__dirname, "public/data");
 
-// ルーム管理
-const rooms = {}; // { roomId: { players, scores, info, genre, current, questions, hostId, locked, buzzed } }
+const rooms = {}; // ルーム情報
 
 function loadQuestions(genre) {
   try {
@@ -28,11 +24,11 @@ function loadQuestions(genre) {
   }
 }
 
-// ソケット接続
 io.on("connection", (socket) => {
-  // ルーム参加
   socket.on("join_room", ({ roomId, avatar }) => {
+    roomId = "defaultRoom"; // ← すべてのroomIdをdefaultRoomに統一
     socket.join(roomId);
+
     if (!rooms[roomId]) {
       rooms[roomId] = {
         players: [],
@@ -47,8 +43,6 @@ io.on("connection", (socket) => {
       };
     }
 
-    console.log(`[JOIN_ROOM] socket.id=${socket.id}, roomId=${roomId}, avatar=${avatar}`);
-
     const room = rooms[roomId];
     room.players.push(socket.id);
     room.scores[socket.id] = 0;
@@ -58,6 +52,7 @@ io.on("connection", (socket) => {
     };
 
     socket.emit("you_are_host", socket.id === room.hostId);
+
     io.to(roomId).emit("players_update", {
       players: room.players.map((id) => ({
         id,
@@ -75,13 +70,11 @@ io.on("connection", (socket) => {
         room.players.splice(index, 1);
         delete room.scores[socket.id];
         delete room.info[socket.id];
-        room.locked?.delete(socket.id);
+        room.locked.delete(socket.id);
 
         if (room.hostId === socket.id) {
           room.hostId = room.players[0] || null;
-          if (room.hostId) {
-            io.to(room.hostId).emit("you_are_host", true);
-          }
+          if (room.hostId) io.to(room.hostId).emit("you_are_host", true);
         }
 
         if (room.players.length === 0) {
@@ -101,49 +94,40 @@ io.on("connection", (socket) => {
     });
   });
 
-  // 出題開始（ジャンル選択へ）
   socket.on("start_genre", (roomId) => {
+    roomId = "defaultRoom";
     io.to(roomId).emit("go_genre");
   });
 
-  // ジャンル決定
   socket.on("select_genre", ({ roomId, genre }) => {
+    roomId = "defaultRoom";
     const room = rooms[roomId];
     if (!room) return;
+
     room.genre = genre;
     room.questions = loadQuestions(genre);
     room.current = 0;
-    io.to(roomId).emit("start_quiz");
+
+    io.to(roomId).emit("start_quiz", genre);
     sendQuestion(roomId);
   });
 
-  socket.on("genre_selected", ({ roomId, genre }) => {
-    const room = rooms[roomId];
-    if (!room) return;
-
-    room.genre = genre;
-    room.questions = loadQuestions(genre);
-
-    // 全員にジャンルと開始命令を送る
-    io.to(roomId).emit("start_quiz", genre);
-  });
-
-  
-
-  // バズ
   socket.on("buzz", (roomId) => {
+    roomId = "defaultRoom";
     const room = rooms[roomId];
     if (!room || room.buzzed || room.locked.has(socket.id)) return;
     room.buzzed = socket.id;
+
     io.to(roomId).emit("pause_typing");
     socket.emit("your_turn");
     socket.to(roomId).emit("wait");
   });
 
-  // 回答
   socket.on("answer", ({ roomId, answer }) => {
+    roomId = "defaultRoom";
     const room = rooms[roomId];
     if (!room || room.buzzed !== socket.id) return;
+
     const q = room.questions[room.current];
     const isCorrect = answer.trim().toLowerCase() === q.answer.toLowerCase();
 
@@ -172,19 +156,6 @@ io.on("connection", (socket) => {
       })),
     });
 
-      // ホストがジャンルを選択したとき
-    socket.on("genre_selected", ({ roomId, genre }) => {
-      const room = rooms[roomId];
-      if (!room) return;
-
-      room.genre = genre;
-      room.questions = loadQuestions(genre);
-
-      // 全員にジャンルと開始命令を送る
-      io.to(roomId).emit("start_quiz", genre);
-    });
-
-
     const winner = Object.entries(room.scores).find(([_, s]) => s >= 50);
     if (winner) {
       io.to(roomId).emit("result", {
@@ -197,6 +168,7 @@ io.on("connection", (socket) => {
     if (room.locked.size === room.players.length) {
       room.current++;
       room.locked.clear();
+
       if (room.current < room.questions.length) {
         setTimeout(() => sendQuestion(roomId), 1500);
       } else {
@@ -213,6 +185,7 @@ function sendQuestion(roomId) {
   const room = rooms[roomId];
   if (!room || !room.questions[room.current]) return;
   const q = room.questions[room.current];
+
   io.to(roomId).emit("question", {
     question: q.question,
     index: room.current + 1,
