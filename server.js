@@ -90,6 +90,23 @@ io.on("connection", (socket) => {
       sendQuestion(roomId);
     }
   });
+  
+  // サーバ側 - server.js の io.on("connection", ...) 内に追加
+  socket.on("start_genre_select", (roomId) => {
+    if (rooms[roomId] && socket.id === rooms[roomId].hostId) {
+     io.to(roomId).emit("go_to_genre_select");
+    }
+  });
+
+  socket.on("genre_selected", ({ roomId, genre }) => {
+    if (rooms[roomId]) {
+     rooms[roomId].genre = genre;
+      rooms[roomId].questions = loadQuestions(genre);
+      io.to(roomId).emit("genre_selected", genre);
+    }
+  });
+
+
 
   socket.on("buzz", (roomId) => {
     const room = rooms[roomId];
