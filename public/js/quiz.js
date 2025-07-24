@@ -80,3 +80,6 @@ socket.on("result", ({ message }) => {
 socket.on("pause_typing", () => {
   clearInterval(); // タイマー停止
 });
+
+// ページ読み込み完了 → 準備完了を通知
+socket.emit("ready", roomId);

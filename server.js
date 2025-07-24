@@ -51,6 +51,21 @@ io.on("connection", (socket) => {
       avatar: avatar || "default.png",
     };
 
+    // プレイヤー準備完了
+    socket.on("ready", (roomId) => {
+      const room = rooms[roomId];
+      if (!room) return;
+
+      room.readyCount = (room.readyCount || 0) + 1;
+
+      if (room.readyCount >= room.players.length) {
+      room.current = 0;
+      sendQuestion(roomId);
+      room.readyCount = 0; // リセット（再戦など考慮）
+    }
+  });
+
+
     socket.emit("you_are_host", socket.id === room.hostId);
 
     io.to(roomId).emit("players_update", {

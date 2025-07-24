@@ -1,37 +1,39 @@
+// public/js/genre.js
 const socket = io();
-const roomId = "defaultRoom";
+const roomId = localStorage.getItem("roomId");
+const isHost = localStorage.getItem("isHost") === "true";
 
-// ジャンルボタン（手動選択）
-document.querySelectorAll(".genre-button").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const genre = btn.dataset.genre;
-    localStorage.setItem("selectedGenre", genre);
-    socket.emit("select_genre", { roomId, genre });
-  });
+const genres = ["anime", "kihon", "zatsu"];
+const genreImages = {
+  anime: "images/genre_anime.png",
+  kihon: "images/genre_kihon.png",
+  zatsu: "images/genre_zatsu.png"
+};
+
+const genreImg = document.getElementById("genre-image");
+const genreText = document.getElementById("genre-text");
+
+// ホストがジャンルをランダム決定 → 共有
+if (isHost) {
+  const selected = genres[Math.floor(Math.random() * genres.length)];
+  localStorage.setItem("selectedGenre", selected);
+  socket.emit("genre_selected", { roomId, genre: selected });
+  displayGenre(selected);
+}
+
+socket.on("start_quiz", (genre) => {
+  // ホスト・参加者ともに受信
+  localStorage.setItem("selectedGenre", genre);
+  displayGenre(genre);
+
+  // 2秒後にクイズ画面へ遷移
+  setTimeout(() => {
+    window.location.href = "/quiz.html";
+  }, 2000);
 });
 
-// ランダム選択ボタン
-document.getElementById("randomGenre").addEventListener("click", () => {
-  const genres = ["anime", "zatsu", "kihon"];
-  const randomGenre = genres[Math.floor(Math.random() * genres.length)];
-  localStorage.setItem("selectedGenre", randomGenre);
-  socket.emit("select_genre", { roomId, genre: randomGenre });
-});
-
-// ジャンルが決定されたら quiz.html へ遷移
-socket.on("start_quiz", () => {
-  window.location.href = "/quiz.html";
-});
-
-socket.on("select_genre", ({ roomId, genre }) => {
-  const room = rooms[roomId];
-  if (!room) return;
-
-  room.genre = genre;
-  room.questions = loadQuestions(genre);
-  room.current = 0;
-
-  io.to(roomId).emit("start_quiz");
-  sendQuestion(roomId);
-});
-
+function displayGenre(genre) {
+  genreImg.src = genreImages[genre];
+  genreImg.alt = genre;
+  genreText.textContent = `ジャンル：${genre}`;
+}
