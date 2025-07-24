@@ -1,36 +1,26 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8" />
-  <title>クイズ画面</title>
-  <link rel="stylesheet" href="css/quiz.css" />
-</head>
 <body>
-  <!-- 問題表示（黒板風） -->
-  <div class="question-number" id="question-number">1/3</div>
-  <div class="question-box" id="question">問題が表示されます</div>
+  <div id="quiz-container">
+    <div id="left-player">
+      <img id="left-avatar" src="/images/default.png" />
+      <div id="left-name">相手</div>
+      <div id="left-score">スコア：0</div>
+    </div>
 
-  <!-- タイマー表示 -->
-  <div class="timer-box" id="timer">残り時間：--秒</div>
+    <div id="center-area">
+      <div id="question">問題文</div>
+      <div id="timer">10</div>
+      <form id="answerForm">
+        <input id="answerInput" type="text" placeholder="回答を入力" disabled />
+      </form>
+    </div>
 
-  <!-- 回答欄 -->
-  <div class="answer-box" id="answer-box">
-    <div id="status"></div>
-    <input type="text" id="answer" placeholder="Enterで早押し → 回答入力" />
+    <div id="right-player">
+      <img id="right-avatar" src="/images/default.png" />
+      <div id="right-name">自分</div>
+      <div id="right-score">スコア：0</div>
+    </div>
   </div>
 
-  <!-- プレイヤー表示：左 -->
-  <div class="player-group-left" id="player-list">
-    <!-- 他のプレイヤー情報はJSで動的にここに追加 -->
-  </div>
-
-  <!-- 自分プレイヤー表示：右（jsで自分を特定してここに追加してもよい） -->
-  <div class="player player-right" id="self-player">
-    <!-- 自分用プレイヤー表示は必要であればJSで追加 -->
-  </div>
-
-  <!-- ソケット通信とクイズ処理 -->
   <script src="/socket.io/socket.io.js"></script>
-  <script src="js/quiz.js"></script>
+  <script src="js/quiz.js" defer></script>
 </body>
-</html>
