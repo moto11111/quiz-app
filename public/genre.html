@@ -1,24 +1,42 @@
-<!-- genre.html -->
-<script src="/socket.io/socket.io.js"></script>
-<script>
-const socket = io();
-const roomId = new URLSearchParams(window.location.search).get("room");
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>ジャンル選択</title>
+  <link rel="stylesheet" href="css/genre.css" />
+</head>
+<body>
+  <h2>ジャンル選択</h2>
+  <div id="genre-list">
+    <button onclick="selectGenre('kihon')">基本情報</button>
+    <button onclick="selectGenre('anime')">アニメ</button>
+    <button onclick="selectGenre('zatsu')">雑学</button>
+  </div>
+  <p id="waiting" style="display: none;">ジャンル選択中...</p>
 
-document.querySelectorAll(".genre-button").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const selectedGenre = btn.dataset.genre;
-    localStorage.setItem("selectedGenre", selectedGenre);
-    sessionStorage.setItem("isHost", "true"); // ← ホストが選んだ印
-    socket.emit("genre_selected", { roomId, genre: selectedGenre });
-    location.href = `quiz.html?room=${roomId}`;
-  });
-});
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomId = urlParams.get("room");
+    const isHost = sessionStorage.getItem("isHost") === "true";
 
-// ゲストが受信した genre に基づいて quiz.html に進む
-socket.on("genre_selected", (genre) => {
-  localStorage.setItem("selectedGenre", genre);
-  sessionStorage.setItem("isHost", "false");
-  const roomId = new URLSearchParams(window.location.search).get("room");
-  location.href = `quiz.html?room=${roomId}`;
-});
-</script>
+    if (!isHost) {
+      document.getElementById("genre-list").style.display = "none";
+      document.getElementById("waiting").style.display = "block";
+    }
+
+    function selectGenre(genre) {
+      // ホストが選択したジャンルをサーバに送信
+      localStorage.setItem("selectedGenre", genre);
+      socket.emit("genre_selected", { roomId, genre });
+    }
+
+    // ジャンル決定 → クイズ画面へ
+    socket.on("start_quiz", (genre) => {
+      localStorage.setItem("selectedGenre", genre); // 全員同じジャンルに統一
+      window.location.href = `quiz.html?room=${roomId}`;
+    });
+  </script>
+</body>
+</html>

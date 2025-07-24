@@ -1,29 +1,17 @@
-<!-- wait.html -->
-<button id="startButton" style="display:none;">出題開始</button>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>待機画面</title>
+  <link rel="stylesheet" href="css/wait.css" />
+</head>
+<body>
+  <h2>ルーム待機中</h2>
+  <div id="player-count">0/2</div>
+  <div id="player-list" class="players"></div>
+  <button id="start-button" style="display: none;">出題開始</button>
 
-<script src="/socket.io/socket.io.js"></script>
-<script>
-const socket = io();
-const roomId = new URLSearchParams(window.location.search).get("room");
-socket.emit("join_room", { roomId, avatar: sessionStorage.getItem("playerAvatar") });
-
-// 参加人数更新
-socket.on("update_player_count", (count) => {
-  document.querySelector(".player-name").textContent = `参加人数：${count}人`;
-});
-
-// 自分がホストか通知された場合、「開始」ボタン表示
-socket.on("you_are_host", () => {
-  document.getElementById("startButton").style.display = "block";
-});
-
-// 「出題開始」クリック → サーバーに通知
-document.getElementById("startButton").addEventListener("click", () => {
-  socket.emit("start_genre_select", roomId);
-});
-
-// ジャンル選択へ遷移指示が来たら genre.html へ移動
-socket.on("go_to_genre_select", () => {
-  location.href = `genre.html?room=${roomId}`;
-});
-</script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/wait.js"></script>
+</body>
+</html>

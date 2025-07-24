@@ -1,7 +1,6 @@
-// server.js
 const express = require("express");
-const path = require("path");
 const http = require("http");
+const path = require("path");
 const { Server } = require("socket.io");
 const fs = require("fs");
 
@@ -9,8 +8,14 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// 静的ファイル
 app.use(express.static("public"));
+
+// データディレクトリ
 const DATA_PATH = path.join(__dirname, "public/data");
+
+// ルーム管理
+const rooms = {}; // { roomId: { players, scores, info, genre, current, questions, hostId, locked, buzzed } }
 
 function loadQuestions(genre) {
   try {
@@ -18,131 +23,171 @@ function loadQuestions(genre) {
     const data = fs.readFileSync(filePath, "utf-8");
     return JSON.parse(data);
   } catch (e) {
-    console.error(`❌ 問題読み込み失敗: ${genre}`, e);
+    console.error("❌ 問題読み込み失敗:", genre, e);
     return [];
   }
 }
 
-const rooms = {}; // { roomId: { ... } }
-
+// ソケット接続
 io.on("connection", (socket) => {
-  socket.on("join_room", ({ roomId, avatar = "default.png", genre }) => {
+  // ルーム参加
+  socket.on("join_room", ({ roomId, avatar }) => {
     socket.join(roomId);
-
     if (!rooms[roomId]) {
-      const questions = loadQuestions(genre);
       rooms[roomId] = {
         players: [],
         scores: {},
         info: {},
+        genre: null,
+        questions: [],
         current: 0,
-        buzzed: null,
-        locked: new Set(),
         hostId: socket.id,
-        genre,
-        questions
+        locked: new Set(),
+        buzzed: null,
       };
-      socket.emit("you_are_host");
-    } else {
-      socket.emit("you_are_guest");
     }
 
     const room = rooms[roomId];
     room.players.push(socket.id);
     room.scores[socket.id] = 0;
-    room.info[socket.id] = { avatar };
+    room.info[socket.id] = {
+      name: socket.id === room.hostId ? "自分" : "相手",
+      avatar: avatar || "default.png",
+    };
 
-    sendPlayerList(roomId);
-    io.to(roomId).emit("update_player_count", room.players.length);
-    io.to(socket.id).emit("genre_selected", room.genre);
+    socket.emit("you_are_host", socket.id === room.hostId);
+    io.to(roomId).emit("players_update", {
+      players: room.players.map((id) => ({
+        id,
+        name: room.info[id].name,
+        avatar: room.info[id].avatar,
+        score: room.scores[id],
+      })),
+      count: `${room.players.length}/2`,
+    });
 
     socket.on("disconnect", () => {
       if (!rooms[roomId]) return;
-
       const index = room.players.indexOf(socket.id);
       if (index !== -1) {
         room.players.splice(index, 1);
         delete room.scores[socket.id];
         delete room.info[socket.id];
-        room.locked.delete(socket.id);
+        room.locked?.delete(socket.id);
 
         if (room.hostId === socket.id) {
           room.hostId = room.players[0] || null;
           if (room.hostId) {
-            io.to(room.hostId).emit("you_are_host");
+            io.to(room.hostId).emit("you_are_host", true);
           }
         }
-      }
 
-      sendPlayerList(roomId);
-      io.to(roomId).emit("update_player_count", room.players.length);
-
-      if (room.players.length === 0) {
-        delete rooms[roomId];
+        if (room.players.length === 0) {
+          delete rooms[roomId];
+        } else {
+          io.to(roomId).emit("players_update", {
+            players: room.players.map((id) => ({
+              id,
+              name: room.info[id].name,
+              avatar: room.info[id].avatar,
+              score: room.scores[id],
+            })),
+            count: `${room.players.length}/2`,
+          });
+        }
       }
     });
   });
 
-  socket.on("start_quiz", (roomId) => {
-    if (rooms[roomId]) {
-      rooms[roomId].current = 0;
-      io.to(roomId).emit("start_quiz");
-      sendQuestion(roomId);
-    }
+  // 出題開始（ジャンル選択へ）
+  socket.on("start_genre", (roomId) => {
+    io.to(roomId).emit("go_genre");
   });
-  
-  // サーバ側 - server.js の io.on("connection", ...) 内に追加
-  socket.on("start_genre_select", (roomId) => {
-    if (rooms[roomId] && socket.id === rooms[roomId].hostId) {
-     io.to(roomId).emit("go_to_genre_select");
-    }
+
+  // ジャンル決定
+  socket.on("select_genre", ({ roomId, genre }) => {
+    const room = rooms[roomId];
+    if (!room) return;
+    room.genre = genre;
+    room.questions = loadQuestions(genre);
+    room.current = 0;
+    io.to(roomId).emit("start_quiz");
+    sendQuestion(roomId);
   });
 
   socket.on("genre_selected", ({ roomId, genre }) => {
-    if (rooms[roomId]) {
-     rooms[roomId].genre = genre;
-      rooms[roomId].questions = loadQuestions(genre);
-      io.to(roomId).emit("genre_selected", genre);
-    }
+    const room = rooms[roomId];
+    if (!room) return;
+
+    room.genre = genre;
+    room.questions = loadQuestions(genre);
+
+    // 全員にジャンルと開始命令を送る
+    io.to(roomId).emit("start_quiz", genre);
   });
 
+  
 
-
+  // バズ
   socket.on("buzz", (roomId) => {
     const room = rooms[roomId];
     if (!room || room.buzzed || room.locked.has(socket.id)) return;
-
     room.buzzed = socket.id;
     io.to(roomId).emit("pause_typing");
     socket.emit("your_turn");
     socket.to(roomId).emit("wait");
   });
 
+  // 回答
   socket.on("answer", ({ roomId, answer }) => {
     const room = rooms[roomId];
     if (!room || room.buzzed !== socket.id) return;
-
     const q = room.questions[room.current];
-    const correct = q.answer.toLowerCase();
-    const isCorrect = answer.trim().toLowerCase() === correct;
+    const isCorrect = answer.trim().toLowerCase() === q.answer.toLowerCase();
 
     if (isCorrect) {
       room.scores[socket.id] += 10;
-      io.to(roomId).emit("result", { message: "正解！ +10点", player: socket.id });
+      io.to(roomId).emit("result", {
+        message: "正解！ +10点",
+        player: socket.id,
+      });
     } else {
       room.scores[socket.id] -= 10;
       room.locked.add(socket.id);
-      io.to(roomId).emit("result", { message: "不正解… -10点", player: socket.id });
+      io.to(roomId).emit("result", {
+        message: "不正解… -10点",
+        player: socket.id,
+      });
     }
 
-    sendPlayerList(roomId);
     room.buzzed = null;
+    io.to(roomId).emit("players_update", {
+      players: room.players.map((id) => ({
+        id,
+        name: room.info[id].name,
+        avatar: room.info[id].avatar,
+        score: room.scores[id],
+      })),
+    });
 
-    const winner = Object.entries(room.scores).find(([id, score]) => score >= 50);
+      // ホストがジャンルを選択したとき
+    socket.on("genre_selected", ({ roomId, genre }) => {
+      const room = rooms[roomId];
+      if (!room) return;
+
+      room.genre = genre;
+      room.questions = loadQuestions(genre);
+
+      // 全員にジャンルと開始命令を送る
+      io.to(roomId).emit("start_quiz", genre);
+    });
+
+
+    const winner = Object.entries(room.scores).find(([_, s]) => s >= 50);
     if (winner) {
       io.to(roomId).emit("result", {
-        message: `🎉 勝者決定！${room.info[winner[0]].avatar} が50点達成 🎉`,
-        player: winner[0]
+        message: `🎉 勝者決定！${room.info[winner[0]].name} が50点達成 🎉`,
+        player: winner[0],
       });
       return;
     }
@@ -153,7 +198,10 @@ io.on("connection", (socket) => {
       if (room.current < room.questions.length) {
         setTimeout(() => sendQuestion(roomId), 1500);
       } else {
-        io.to(roomId).emit("result", { message: "クイズ終了！", player: null });
+        io.to(roomId).emit("result", {
+          message: "クイズ終了！",
+          player: null,
+        });
       }
     }
   });
@@ -161,36 +209,22 @@ io.on("connection", (socket) => {
 
 function sendQuestion(roomId) {
   const room = rooms[roomId];
-  if (!room) return;
-
+  if (!room || !room.questions[room.current]) return;
   const q = room.questions[room.current];
-  room.buzzed = null;
-  room.locked.clear();
-
   io.to(roomId).emit("question", {
     question: q.question,
     index: room.current + 1,
-    total: room.questions.length
+    total: room.questions.length,
   });
 }
 
-function sendPlayerList(roomId) {
-  const room = rooms[roomId];
-  if (!room) return;
-
-  io.to(roomId).emit("players_update", {
-    players: room.players.map(id => ({
-      id,
-      avatar: room.info[id]?.avatar || "default.png",
-      score: room.scores[id] || 0
-    }))
-  });
-}
-
+// ルーティング
 app.get("/", (_, res) => res.sendFile(path.join(__dirname, "public/index.html")));
 app.get("/quiz", (_, res) => res.sendFile(path.join(__dirname, "public/quiz.html")));
+app.get("/genre", (_, res) => res.sendFile(path.join(__dirname, "public/genre.html")));
+app.get("/wait", (_, res) => res.sendFile(path.join(__dirname, "public/wait.html")));
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`✅ サーバー起動中: http://localhost:${PORT}`);
+  console.log(`✅ サーバー起動: http://localhost:${PORT}`);
 });
