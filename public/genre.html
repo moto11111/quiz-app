@@ -1,12 +1,37 @@
+<!DOCTYPE html>
+<html lang="ja">
 <head>
   <meta charset="UTF-8" />
   <title>ジャンル選択</title>
+  <link rel="stylesheet" href="css/genre.css" />
   <script src="/socket.io/socket.io.js"></script>
-  <script src="js/genre.js" defer></script>
 </head>
 <body>
-  <h2>ジャンルを選んでください</h2>
-  <button class="genre-button" data-genre="zatsu">雑学</button>
-  <button class="genre-button" data-genre="anime">アニメ</button>
-  <button class="genre-button" data-genre="kihon">基本情報</button>
+  <h2>ジャンルを選んでいます…</h2>
+  <div id="genre-image-container">
+    <img id="genre-image" src="" alt="ジャンル画像" width="300" />
+  </div>
+
+  <script>
+    const genres = [
+      { name: "anime", image: "images/genre_anime.png" },
+      { name: "kihon", image: "images/genre_kihon.png" },
+      { name: "zatsu", image: "images/genre_zatsu.png" },
+    ];
+
+    const selected = genres[Math.floor(Math.random() * genres.length)];
+
+    document.getElementById("genre-image").src = selected.image;
+
+    const socket = io();
+    const roomId = localStorage.getItem("roomId") || "defaultRoom";
+
+    socket.emit("select_genre", { roomId, genre: selected.name });
+
+    socket.on("start_quiz", () => {
+      localStorage.setItem("genre", selected.name);
+      window.location.href = "/quiz.html";
+    });
+  </script>
 </body>
+</html>

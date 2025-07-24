@@ -1,22 +1,37 @@
 const socket = io();
-const isHost = sessionStorage.getItem("isHost") === "true";
 const roomId = "defaultRoom";
 
-// ジャンルボタンをクリック
+// ジャンルボタン（手動選択）
 document.querySelectorAll(".genre-button").forEach((btn) => {
   btn.addEventListener("click", () => {
     const genre = btn.dataset.genre;
-
-    if (isHost) {
-      // ホストがジャンルを選択したらサーバーに送信
-      socket.emit("select_genre", { roomId, genre });
-    }
+    localStorage.setItem("selectedGenre", genre);
+    socket.emit("select_genre", { roomId, genre });
   });
 });
 
-// ジャンルが選ばれたら全員 quiz.html に遷移
-socket.on("start_quiz", (genre) => {
-  // ジャンルを保存しておく（クイズ画面で使う）
-  localStorage.setItem("selectedGenre", genre);
+// ランダム選択ボタン
+document.getElementById("randomGenre").addEventListener("click", () => {
+  const genres = ["anime", "zatsu", "kihon"];
+  const randomGenre = genres[Math.floor(Math.random() * genres.length)];
+  localStorage.setItem("selectedGenre", randomGenre);
+  socket.emit("select_genre", { roomId, genre: randomGenre });
+});
+
+// ジャンルが決定されたら quiz.html へ遷移
+socket.on("start_quiz", () => {
   window.location.href = "/quiz.html";
 });
+
+socket.on("select_genre", ({ roomId, genre }) => {
+  const room = rooms[roomId];
+  if (!room) return;
+
+  room.genre = genre;
+  room.questions = loadQuestions(genre);
+  room.current = 0;
+
+  io.to(roomId).emit("start_quiz");
+  sendQuestion(roomId);
+});
+
