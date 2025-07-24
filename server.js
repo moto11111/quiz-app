@@ -47,6 +47,8 @@ io.on("connection", (socket) => {
       };
     }
 
+    console.log(`[JOIN_ROOM] socket.id=${socket.id}, roomId=${roomId}, avatar=${avatar}`);
+
     const room = rooms[roomId];
     room.players.push(socket.id);
     room.scores[socket.id] = 0;

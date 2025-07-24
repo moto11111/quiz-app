@@ -32,3 +32,7 @@ socket.emit("join_room", {
   name: プレイヤー名,
   avatar: avatar  // 取得済みの画像ファイル名（例: "ヒト3.png"）
 });
+
+sessionStorage.setItem("isHost", "false");
+sessionStorage.setItem("playerAvatar", selectedAvatar); // avatar名が"xxx.png"など
+
