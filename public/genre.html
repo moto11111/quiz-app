@@ -1,42 +1,12 @@
-<!DOCTYPE html>
-<html lang="ja">
 <head>
   <meta charset="UTF-8" />
   <title>ジャンル選択</title>
-  <link rel="stylesheet" href="css/genre.css" />
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/genre.js" defer></script>
 </head>
 <body>
-  <h2>ジャンル選択</h2>
-  <div id="genre-list">
-    <button onclick="selectGenre('kihon')">基本情報</button>
-    <button onclick="selectGenre('anime')">アニメ</button>
-    <button onclick="selectGenre('zatsu')">雑学</button>
-  </div>
-  <p id="waiting" style="display: none;">ジャンル選択中...</p>
-
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-    const urlParams = new URLSearchParams(window.location.search);
-    const roomId = urlParams.get("room");
-    const isHost = sessionStorage.getItem("isHost") === "true";
-
-    if (!isHost) {
-      document.getElementById("genre-list").style.display = "none";
-      document.getElementById("waiting").style.display = "block";
-    }
-
-    function selectGenre(genre) {
-      // ホストが選択したジャンルをサーバに送信
-      localStorage.setItem("selectedGenre", genre);
-      socket.emit("genre_selected", { roomId, genre });
-    }
-
-    // ジャンル決定 → クイズ画面へ
-    socket.on("start_quiz", (genre) => {
-      localStorage.setItem("selectedGenre", genre); // 全員同じジャンルに統一
-      window.location.href = `quiz.html?room=${roomId}`;
-    });
-  </script>
+  <h2>ジャンルを選んでください</h2>
+  <button class="genre-button" data-genre="zatsu">雑学</button>
+  <button class="genre-button" data-genre="anime">アニメ</button>
+  <button class="genre-button" data-genre="kihon">基本情報</button>
 </body>
-</html>
