@@ -1,41 +1,42 @@
 const socket = io();
-const roomId = "defaultRoom";
 const isHost = sessionStorage.getItem("isHost") === "true";
-const playerAvatar = sessionStorage.getItem("playerAvatar") || "default.png";
+const avatar = sessionStorage.getItem("playerAvatar") || "default.png";
+const roomId = localStorage.getItem("roomId") || "defaultRoom";
 
-// ルーム参加通知
-socket.emit("join_room", { roomId, avatar: playerAvatar });
+// ルーム参加通知（アバター情報付き）
+socket.emit("join_room", {
+  roomId,
+  avatar: avatar
+});
 
-// 出題開始ボタン（ホストのみ表示）
-const startButton = document.getElementById("start-button");
+// 出題開始ボタン表示（ホストのみ）
 if (isHost) {
-  startButton.style.display = "block";
-  startButton.addEventListener("click", () => {
+  document.getElementById("start-button").style.display = "block";
+  document.getElementById("start-button").addEventListener("click", () => {
     socket.emit("start_genre", roomId);
   });
 }
 
-// プレイヤー情報の更新
+// プレイヤー情報更新
 socket.on("players_update", ({ players, count }) => {
-  const playerList = document.getElementById("player-list");
-  const playerCount = document.getElementById("player-count");
+  const list = document.getElementById("player-list");
+  const countDiv = document.getElementById("player-count");
 
-  playerList.innerHTML = "";
-  playerCount.textContent = count;
+  countDiv.textContent = count;
+  list.innerHTML = "";
 
-  players.forEach((p) => {
+  players.forEach(p => {
     const div = document.createElement("div");
-    div.classList.add("player");
-
     div.innerHTML = `
       <img src="images/${p.avatar}" width="60" height="60"><br>
-      <strong>${p.name}</strong>
+      <strong>${p.name}</strong><br>
+      ポイント：${p.score}
     `;
-    playerList.appendChild(div);
+    list.appendChild(div);
   });
 });
 
-// ジャンル選択画面へ遷移
+// ジャンル画面へ遷移
 socket.on("go_genre", () => {
-  window.location.href = "genre.html";
+  window.location.href = "/genre.html";
 });

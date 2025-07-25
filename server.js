@@ -9,9 +9,9 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 app.use(express.static("public"));
-const DATA_PATH = path.join(__dirname, "public/data");
 
-const rooms = {}; // ルーム情報
+const DATA_PATH = path.join(__dirname, "public/data");
+const rooms = {};
 
 function loadQuestions(genre) {
   try {
@@ -24,11 +24,15 @@ function loadQuestions(genre) {
   }
 }
 
+// ランダムジャンル選択
+function getRandomGenre() {
+  const genres = ["anime", "kihon", "zatsu"];
+  return genres[Math.floor(Math.random() * genres.length)];
+}
+
 io.on("connection", (socket) => {
   socket.on("join_room", ({ roomId, avatar }) => {
-    roomId = "defaultRoom"; // ← すべてのroomIdをdefaultRoomに統一
     socket.join(roomId);
-
     if (!rooms[roomId]) {
       rooms[roomId] = {
         players: [],
@@ -51,23 +55,7 @@ io.on("connection", (socket) => {
       avatar: avatar || "default.png",
     };
 
-    // プレイヤー準備完了
-    socket.on("ready", (roomId) => {
-      const room = rooms[roomId];
-      if (!room) return;
-
-      room.readyCount = (room.readyCount || 0) + 1;
-
-      if (room.readyCount >= room.players.length) {
-      room.current = 0;
-      sendQuestion(roomId);
-      room.readyCount = 0; // リセット（再戦など考慮）
-    }
-  });
-
-
     socket.emit("you_are_host", socket.id === room.hostId);
-
     io.to(roomId).emit("players_update", {
       players: room.players.map((id) => ({
         id,
@@ -85,13 +73,13 @@ io.on("connection", (socket) => {
         room.players.splice(index, 1);
         delete room.scores[socket.id];
         delete room.info[socket.id];
-        room.locked.delete(socket.id);
-
+        room.locked?.delete(socket.id);
         if (room.hostId === socket.id) {
           room.hostId = room.players[0] || null;
-          if (room.hostId) io.to(room.hostId).emit("you_are_host", true);
+          if (room.hostId) {
+            io.to(room.hostId).emit("you_are_host", true);
+          }
         }
-
         if (room.players.length === 0) {
           delete rooms[roomId];
         } else {
@@ -109,15 +97,16 @@ io.on("connection", (socket) => {
     });
   });
 
+  // 出題開始 → ジャンル選択画面へ
   socket.on("start_genre", (roomId) => {
-    roomId = "defaultRoom";
     io.to(roomId).emit("go_genre");
   });
 
-  socket.on("select_genre", ({ roomId, genre }) => {
-    roomId = "defaultRoom";
+  // ジャンル決定（ホストがランダムに決める）
+  socket.on("select_genre", ({ roomId }) => {
     const room = rooms[roomId];
     if (!room) return;
+    const genre = getRandomGenre();
 
     room.genre = genre;
     room.questions = loadQuestions(genre);
@@ -127,22 +116,20 @@ io.on("connection", (socket) => {
     sendQuestion(roomId);
   });
 
+  // バズ処理
   socket.on("buzz", (roomId) => {
-    roomId = "defaultRoom";
     const room = rooms[roomId];
     if (!room || room.buzzed || room.locked.has(socket.id)) return;
     room.buzzed = socket.id;
-
     io.to(roomId).emit("pause_typing");
     socket.emit("your_turn");
     socket.to(roomId).emit("wait");
   });
 
+  // 回答処理
   socket.on("answer", ({ roomId, answer }) => {
-    roomId = "defaultRoom";
     const room = rooms[roomId];
     if (!room || room.buzzed !== socket.id) return;
-
     const q = room.questions[room.current];
     const isCorrect = answer.trim().toLowerCase() === q.answer.toLowerCase();
 
@@ -183,7 +170,6 @@ io.on("connection", (socket) => {
     if (room.locked.size === room.players.length) {
       room.current++;
       room.locked.clear();
-
       if (room.current < room.questions.length) {
         setTimeout(() => sendQuestion(roomId), 1500);
       } else {
@@ -200,7 +186,6 @@ function sendQuestion(roomId) {
   const room = rooms[roomId];
   if (!room || !room.questions[room.current]) return;
   const q = room.questions[room.current];
-
   io.to(roomId).emit("question", {
     question: q.question,
     index: room.current + 1,
@@ -208,7 +193,6 @@ function sendQuestion(roomId) {
   });
 }
 
-// ルーティング
 app.get("/", (_, res) => res.sendFile(path.join(__dirname, "public/index.html")));
 app.get("/quiz", (_, res) => res.sendFile(path.join(__dirname, "public/quiz.html")));
 app.get("/genre", (_, res) => res.sendFile(path.join(__dirname, "public/genre.html")));
