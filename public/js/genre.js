@@ -1,6 +1,5 @@
-// public/js/genre.js
 const socket = io();
-const roomId = localStorage.getItem("roomId");
+const roomId = localStorage.getItem("roomId") || "defaultRoom";
 const isHost = localStorage.getItem("isHost") === "true";
 
 const genres = ["anime", "kihon", "zatsu"];
@@ -10,30 +9,25 @@ const genreImages = {
   zatsu: "images/genre_zatsu.png"
 };
 
-const genreImg = document.getElementById("genre-image");
-const genreText = document.getElementById("genre-text");
-
-// ホストがジャンルをランダム決定 → 共有
 if (isHost) {
-  const selected = genres[Math.floor(Math.random() * genres.length)];
-  localStorage.setItem("selectedGenre", selected);
-  socket.emit("genre_selected", { roomId, genre: selected });
-  displayGenre(selected);
+  const selectedGenre = genres[Math.floor(Math.random() * genres.length)];
+  localStorage.setItem("selectedGenre", selectedGenre);
+  socket.emit("genre_selected", { roomId, genre: selectedGenre });
 }
 
 socket.on("start_quiz", (genre) => {
-  // ホスト・参加者ともに受信
-  localStorage.setItem("selectedGenre", genre);
-  displayGenre(genre);
+  const selectedGenre = genre || localStorage.getItem("selectedGenre");
+  localStorage.setItem("selectedGenre", selectedGenre);
 
-  // 2秒後にクイズ画面へ遷移
+  // 表示
+  const image = document.createElement("img");
+  image.src = genreImages[selectedGenre];
+  image.alt = selectedGenre;
+  image.style.width = "300px";
+  document.getElementById("genre-image").appendChild(image);
+
+  // 数秒後に遷移
   setTimeout(() => {
     window.location.href = "/quiz.html";
-  }, 2000);
+  }, 3000);
 });
-
-function displayGenre(genre) {
-  genreImg.src = genreImages[genre];
-  genreImg.alt = genre;
-  genreText.textContent = `ジャンル：${genre}`;
-}
