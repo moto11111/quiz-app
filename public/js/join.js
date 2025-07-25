@@ -5,19 +5,21 @@ const form = document.getElementById("joinForm");
 form.addEventListener("submit", (e) => {
   e.preventDefault();
 
-  const roomId = "defaultRoom"; // 実質的に固定
-  const avatar = "avatar1.png"; // アバターは選択可能にする場合、変更してください
+  const roomId = "defaultRoom"; // 実際はルームID不要の仕様
+  const avatar = sessionStorage.getItem("playerAvatar") || "ヒト1.png";
+  const name = sessionStorage.getItem("playerName") || "相手";
 
-  // ルーム情報保存
+  // サーバーへ参加情報を送信
+  socket.emit("join_room", {
+    roomId,
+    name,
+    avatar
+  });
+
+  // 情報を保存
   sessionStorage.setItem("isHost", "false");
-  sessionStorage.setItem("playerAvatar", avatar);
-  localStorage.setItem("roomId", roomId);
-
-  // サーバーに参加を通知
-  socket.emit("join_room", { roomId, avatar });
+  sessionStorage.setItem("roomId", roomId);
 
   // 待機画面へ遷移
   window.location.href = "/wait.html";
 });
-  sessionStorage.setItem("playerAvatar", selectedAvatar); // avatar選択時に設定
-  const selectedAvatar = document.querySelector(".avatar.selected").dataset.filename;
