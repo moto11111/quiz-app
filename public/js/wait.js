@@ -1,43 +1,41 @@
 const socket = io();
-const roomId = localStorage.getItem("roomId") || "defaultRoom";
-const isHost = localStorage.getItem("isHost") === "true";
+const roomId = "defaultRoom";
+const isHost = sessionStorage.getItem("isHost") === "true";
+const playerAvatar = sessionStorage.getItem("playerAvatar") || "default.png";
 
-const playerList = document.getElementById("player-list");
-const playerCount = document.getElementById("player-count");
+// ルーム参加通知
+socket.emit("join_room", { roomId, avatar: playerAvatar });
+
+// 出題開始ボタン（ホストのみ表示）
 const startButton = document.getElementById("start-button");
+if (isHost) {
+  startButton.style.display = "block";
+  startButton.addEventListener("click", () => {
+    socket.emit("start_genre", roomId);
+  });
+}
 
-socket.emit("join_room", {
-  roomId,
-  avatar: sessionStorage.getItem("playerAvatar") || "default.png"
-});
-
-// プレイヤー情報更新
+// プレイヤー情報の更新
 socket.on("players_update", ({ players, count }) => {
-  playerCount.textContent = count;
+  const playerList = document.getElementById("player-list");
+  const playerCount = document.getElementById("player-count");
+
   playerList.innerHTML = "";
+  playerCount.textContent = count;
 
   players.forEach((p) => {
     const div = document.createElement("div");
     div.classList.add("player");
+
     div.innerHTML = `
-      <img src="images/${p.avatar}" width="80"><br>
-      ${p.name}<br>
-      ポイント：${p.score}
+      <img src="images/${p.avatar}" width="60" height="60"><br>
+      <strong>${p.name}</strong>
     `;
     playerList.appendChild(div);
   });
-
-  if (isHost && players.length === 2) {
-    startButton.style.display = "block";
-  }
 });
 
-// 出題開始ボタン処理
-startButton.addEventListener("click", () => {
-  socket.emit("start_genre", roomId);
-});
-
-// ジャンル選択へ遷移
+// ジャンル選択画面へ遷移
 socket.on("go_genre", () => {
-  window.location.href = "/genre.html";
+  window.location.href = "genre.html";
 });

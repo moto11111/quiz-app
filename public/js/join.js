@@ -19,3 +19,5 @@ form.addEventListener("submit", (e) => {
   // 待機画面へ遷移
   window.location.href = "/wait.html";
 });
+  sessionStorage.setItem("playerAvatar", selectedAvatar); // avatar選択時に設定
+  const selectedAvatar = document.querySelector(".avatar.selected").dataset.filename;
