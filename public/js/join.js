@@ -5,20 +5,16 @@ const form = document.getElementById("joinForm");
 form.addEventListener("submit", (e) => {
   e.preventDefault();
 
-  const roomId = "defaultRoom"; // 実際はルームID不要の仕様
-  const avatar = sessionStorage.getItem("playerAvatar") || "ヒト1.png";
-  const name = sessionStorage.getItem("playerName") || "相手";
+  const roomId = "defaultRoom"; // 実質的に固定
+  const avatar = "avatar1.png"; // アバターは選択可能にする場合、変更してください
 
-  // サーバーへ参加情報を送信
-  socket.emit("join_room", {
-    roomId,
-    name,
-    avatar
-  });
-
-  // 情報を保存
+  // ルーム情報保存
   sessionStorage.setItem("isHost", "false");
-  sessionStorage.setItem("roomId", roomId);
+  sessionStorage.setItem("playerAvatar", avatar);
+  localStorage.setItem("roomId", roomId);
+
+  // サーバーに参加を通知
+  socket.emit("join_room", { roomId, avatar });
 
   // 待機画面へ遷移
   window.location.href = "/wait.html";
