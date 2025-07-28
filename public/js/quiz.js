@@ -1,19 +1,20 @@
 const socket = io();
 const roomId = "defaultRoom";
+let myId = null;
 
-// プレイヤー名やアバターを初期表示
-const isHost = sessionStorage.getItem("isHost") === "true";
-const myAvatar = sessionStorage.getItem("playerAvatar") || "default.png";
-
-// 表示枠の取得
+// 表示要素
 const questionEl = document.getElementById("question");
 const timerEl = document.getElementById("timer");
 const answerInput = document.getElementById("answerInput");
 const answerForm = document.getElementById("answerForm");
 
-// プレイヤー情報を表示
+// 初期化時に自分のID取得
+socket.on("connect", () => {
+  myId = socket.id;
+});
+
+// プレイヤー表示
 socket.on("players_update", ({ players }) => {
-  const myId = socket.id;
   players.forEach((p) => {
     if (p.id === myId) {
       document.getElementById("right-name").textContent = "自分";
@@ -27,59 +28,64 @@ socket.on("players_update", ({ players }) => {
   });
 });
 
-// 問題の受信
+// 問題表示
 socket.on("question", ({ question, index, total }) => {
   questionEl.textContent = `Q${index}/${total}：${question}`;
   answerInput.value = "";
   answerInput.disabled = true;
-  timerEl.textContent = "10";
   startTimer();
 });
 
+// タイマー
+let timerInterval;
 function startTimer() {
-  let timeLeft = 10;
-  const interval = setInterval(() => {
-    timeLeft--;
-    timerEl.textContent = timeLeft;
-    if (timeLeft <= 0) clearInterval(interval);
+  let time = 10;
+  clearInterval(timerInterval);
+  timerEl.textContent = time;
+  timerInterval = setInterval(() => {
+    time--;
+    timerEl.textContent = time;
+    if (time <= 0) clearInterval(timerInterval);
   }, 1000);
 }
 
-// Enterで早押し
+// 早押し
 window.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && answerInput.disabled) {
     socket.emit("buzz", roomId);
   }
 });
 
-// 回答ターンが来た
+// 回答可能
 socket.on("your_turn", () => {
   answerInput.disabled = false;
   answerInput.focus();
 });
 
-// 他プレイヤーが回答中
+// 他の人が回答中
 socket.on("wait", () => {
   questionEl.textContent = "相手が回答中...";
 });
 
-// 回答処理
+// 回答送信
 answerForm.addEventListener("submit", (e) => {
   e.preventDefault();
-  const answer = answerInput.value;
-  socket.emit("answer", { roomId, answer });
-  answerInput.disabled = true;
+  const answer = answerInput.value.trim();
+  if (answer) {
+    socket.emit("answer", { roomId, answer });
+    answerInput.disabled = true;
+  }
 });
 
-// 結果メッセージの受信
+// 結果表示
 socket.on("result", ({ message }) => {
   questionEl.textContent = message;
 });
 
-// タイピング停止
+// 出題停止
 socket.on("pause_typing", () => {
-  clearInterval(); // タイマー停止
+  clearInterval(timerInterval);
 });
 
-// ページ読み込み完了 → 準備完了を通知
+// 準備完了通知（全員揃ったら出題）
 socket.emit("ready", roomId);
