@@ -97,6 +97,14 @@ io.on("connection", (socket) => {
     });
   });
 
+  // ジャンル選択
+socket.on("selectGenre", ({ room, genre }) => {
+  console.log(`ジャンル ${genre} が room ${room} にて選ばれました`);
+  // ルームの全員にジャンルを送信
+  io.to(room).emit("genreSelected", genre);
+});
+
+
   // 出題開始 → ジャンル選択画面へ
   socket.on("start_genre", (roomId) => {
     io.to(roomId).emit("go_genre");

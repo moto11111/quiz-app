@@ -21,6 +21,13 @@ if (isHost) {
 socket.on("players_update", ({ players, count }) => {
   const list = document.getElementById("player-list");
   const countDiv = document.getElementById("player-count");
+  // 例: プレイヤー情報を受け取ったとき
+const avatar1 = playerData1.avatar; // e.g., avatar01.png
+const avatar2 = playerData2.avatar;
+
+document.getElementById("player1Avatar").src = `/images/${avatar1}`;
+document.getElementById("player2Avatar").src = `/images/${avatar2}`;
+
 
   countDiv.textContent = count;
   list.innerHTML = "";
