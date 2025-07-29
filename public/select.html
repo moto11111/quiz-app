@@ -1,81 +1,23 @@
 <!DOCTYPE html>
 <html lang="ja">
-
 <head>
-    <meta charset="UTF-8">
-    <title>アバター選択</title>
-    <link rel="stylesheet" href="css/select.css">
+  <meta charset="UTF-8" />
+  <title>アバター選択</title>
+  <link rel="stylesheet" href="select.css" />
 </head>
-
 <body>
-    <button class="back-button" onclick="history.back()">戻る</button>
-
-    <div class="avatar-container">
-        <img id="avatarImage" src="images/ヒト1.png" alt="アバター画像">
+  <div class="container">
+    <h2>アバターと名前を選択</h2>
+    <input type="text" id="playerName" placeholder="名前を入力" />
+    <div class="avatars">
+      <label><input type="radio" name="avatar" value="avatar1.png" checked /><img src="images/avatar1.png" /></label>
+      <label><input type="radio" name="avatar" value="avatar2.png" /><img src="images/avatar2.png" /></label>
+      <label><input type="radio" name="avatar" value="avatar3.png" /><img src="images/avatar3.png" /></label>
+      <label><input type="radio" name="avatar" value="avatar4.png" /><img src="images/avatar4.png" /></label>
     </div>
+    <button id="startBtn">ルームに進む</button>
+  </div>
 
-    <div class="button-group">
-        <button onclick="prevAvatar()">←</button>
-        <button onclick="confirmAvatar()">選択</button>
-        <button onclick="nextAvatar()">→</button>
-    </div>
-
-    <script>
-        const avatars = [
-            "images/ヒト1.png",
-            "images/ヒト2.png",
-            "images/ヒト3.png",
-            "images/ヒト4.png",
-            "images/ヒト5.png",
-            "images/ヒト6.png",
-            "images/ヒト7.png",
-            "images/ヒト8.png"
-        ];
-        let currentIndex = 0;
-
-        function updateAvatar() {
-            document.getElementById("avatarImage").src = avatars[currentIndex];
-        }
-
-        function prevAvatar() {
-            currentIndex = (currentIndex - 1 + avatars.length) % avatars.length;
-            updateAvatar();
-        }
-
-        function nextAvatar() {
-            currentIndex = (currentIndex + 1) % avatars.length;
-            updateAvatar();
-        }
-
-
-        function confirmAvatar() {
-            const selected = avatars[currentIndex];
-            const filename = selected.split('/').pop(); // 例: "ヒト1.png"
-            
-            // ✅ アバター名とプレイヤー名を sessionStorage に保存
-            sessionStorage.setItem("playerAvatar", filename);
-            sessionStorage.setItem("playerName", "自分"); // プレイヤー名が選べるなら入力欄から取得
-
-            const urlParams = new URLSearchParams(window.location.search);
-            const mode = urlParams.get("mode");
-
-            if (mode === "host") {
-                location.href = "create.html?avatar=" + encodeURIComponent(filename);
-            } else if (mode === "guest") {
-                location.href = "join.html?avatar=" + encodeURIComponent(filename);
-            } else {
-                alert("モードが不明です。room.htmlから遷移してください。");
-            }
-        }
-
-
-        updateAvatar();
-    </script>
+  <script src="js/select.js"></script>
 </body>
-</body>
-<script src="/socket.io/socket.io.js"></script>
-<script src="js/select.js"></script>
-
-</html>
-
 </html>

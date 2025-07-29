@@ -1,18 +1,19 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const avatarButtons = document.querySelectorAll(".avatar-button");
+document.getElementById("startBtn").addEventListener("click", () => {
+  const name = document.getElementById("playerName").value.trim();
+  const avatar = document.querySelector("input[name='avatar']:checked").value;
 
-  avatarButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const selectedAvatar = btn.dataset.avatar; // 例: "avatar1.png"
-      sessionStorage.setItem("playerAvatar", selectedAvatar);
+  if (!name) {
+    alert("名前を入力してください");
+    return;
+  }
 
-      // 画面遷移（ホスト or 参加者） → 必要に応じて分けてください
-      const isHost = sessionStorage.getItem("isHost"); // 必要に応じて設定
-      if (isHost === "true") {
-        window.location.href = "/create.html";
-      } else {
-        window.location.href = "/join.html";
-      }
-    });
-  });
+  // 保存
+  localStorage.setItem("playerName", name);
+  localStorage.setItem("playerAvatar", avatar);
+
+  // 参加（isHost は false に設定）
+  localStorage.setItem("isHost", "false");
+
+  // join.html → socket.emit → wait.html
+  window.location.href = "join.html";
 });

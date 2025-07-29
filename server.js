@@ -11,7 +11,20 @@ const io = new Server(server);
 app.use(express.static("public"));
 
 const DATA_PATH = path.join(__dirname, "public/data");
-const rooms = {};
+
+const rooms = {
+  defaultRoom: {
+    players: [],
+    scores: {},
+    info: {},
+    genre: null,
+    questions: [],
+    current: 0,
+    hostId: null,
+    locked: new Set(),
+    buzzed: null,
+  }
+};
 
 function loadQuestions(genre) {
   try {
@@ -24,38 +37,30 @@ function loadQuestions(genre) {
   }
 }
 
-// ランダムジャンル選択
-function getRandomGenre() {
-  const genres = ["anime", "kihon", "zatsu"];
-  return genres[Math.floor(Math.random() * genres.length)];
-}
-
 io.on("connection", (socket) => {
-  socket.on("join_room", ({ roomId, avatar }) => {
+  // ルーム参加
+  socket.on("join_room", ({ name, avatar }) => {
+    const roomId = "defaultRoom";
     socket.join(roomId);
-    if (!rooms[roomId]) {
-      rooms[roomId] = {
-        players: [],
-        scores: {},
-        info: {},
-        genre: null,
-        questions: [],
-        current: 0,
-        hostId: socket.id,
-        locked: new Set(),
-        buzzed: null,
+    const room = rooms[roomId];
+
+    if (!room.players.includes(socket.id)) {
+      room.players.push(socket.id);
+      room.scores[socket.id] = 0;
+      room.info[socket.id] = {
+        name: name || "プレイヤー",
+        avatar: avatar || "default.png",
       };
     }
 
-    const room = rooms[roomId];
-    room.players.push(socket.id);
-    room.scores[socket.id] = 0;
-    room.info[socket.id] = {
-      name: socket.id === room.hostId ? "自分" : "相手",
-      avatar: avatar || "default.png",
-    };
+    if (!room.hostId) {
+      room.hostId = socket.id;
+    }
+
+    console.log(`[JOIN] ${socket.id} joined ${roomId} as ${room.info[socket.id].name}`);
 
     socket.emit("you_are_host", socket.id === room.hostId);
+
     io.to(roomId).emit("players_update", {
       players: room.players.map((id) => ({
         id,
@@ -67,13 +72,15 @@ io.on("connection", (socket) => {
     });
 
     socket.on("disconnect", () => {
-      if (!rooms[roomId]) return;
-      const index = room.players.indexOf(socket.id);
-      if (index !== -1) {
-        room.players.splice(index, 1);
+      const idx = room.players.indexOf(socket.id);
+      if (idx !== -1) {
+        room.players.splice(idx, 1);
         delete room.scores[socket.id];
         delete room.info[socket.id];
-        room.locked?.delete(socket.id);
+        room.locked.delete(socket.id);
+        if (room.buzzed === socket.id) {
+          room.buzzed = null;
+        }
         if (room.hostId === socket.id) {
           room.hostId = room.players[0] || null;
           if (room.hostId) {
@@ -81,7 +88,18 @@ io.on("connection", (socket) => {
           }
         }
         if (room.players.length === 0) {
-          delete rooms[roomId];
+          // 全員退出で初期化
+          rooms[roomId] = {
+            players: [],
+            scores: {},
+            info: {},
+            genre: null,
+            questions: [],
+            current: 0,
+            hostId: null,
+            locked: new Set(),
+            buzzed: null,
+          };
         } else {
           io.to(roomId).emit("players_update", {
             players: room.players.map((id) => ({
@@ -97,67 +115,55 @@ io.on("connection", (socket) => {
     });
   });
 
-  // ジャンル選択
-socket.on("selectGenre", ({ room, genre }) => {
-  console.log(`ジャンル ${genre} が room ${room} にて選ばれました`);
-  // ルームの全員にジャンルを送信
-  io.to(room).emit("genreSelected", genre);
-});
-
-
-  // 出題開始 → ジャンル選択画面へ
-  socket.on("start_genre", (roomId) => {
-    io.to(roomId).emit("go_genre");
+  // 出題開始ボタン → ジャンル選択画面へ
+  socket.on("start_genre", () => {
+    io.to("defaultRoom").emit("go_genre");
   });
 
-  // ジャンル決定（ホストがランダムに決める）
-  socket.on("select_genre", ({ roomId }) => {
-    const room = rooms[roomId];
+  // ジャンル決定（ホスト）
+  socket.on("genreSelected", (genre) => {
+    const room = rooms["defaultRoom"];
     if (!room) return;
-    const genre = getRandomGenre();
-
     room.genre = genre;
     room.questions = loadQuestions(genre);
     room.current = 0;
-
-    io.to(roomId).emit("start_quiz", genre);
-    sendQuestion(roomId);
+    io.to("defaultRoom").emit("genreSelected", genre);
   });
 
-  // バズ処理
-  socket.on("buzz", (roomId) => {
-    const room = rooms[roomId];
+  // バズ
+  socket.on("buzz", () => {
+    const room = rooms["defaultRoom"];
     if (!room || room.buzzed || room.locked.has(socket.id)) return;
     room.buzzed = socket.id;
-    io.to(roomId).emit("pause_typing");
+    io.to("defaultRoom").emit("pause_typing");
     socket.emit("your_turn");
-    socket.to(roomId).emit("wait");
+    socket.to("defaultRoom").emit("wait");
   });
 
-  // 回答処理
-  socket.on("answer", ({ roomId, answer }) => {
-    const room = rooms[roomId];
+  // 回答
+  socket.on("answer", ({ answer }) => {
+    const room = rooms["defaultRoom"];
     if (!room || room.buzzed !== socket.id) return;
-    const q = room.questions[room.current];
-    const isCorrect = answer.trim().toLowerCase() === q.answer.toLowerCase();
 
-    if (isCorrect) {
+    const q = room.questions[room.current];
+    const correct = answer.trim().toLowerCase() === q.answer.toLowerCase();
+    if (correct) {
       room.scores[socket.id] += 10;
-      io.to(roomId).emit("result", {
+      io.to("defaultRoom").emit("result", {
         message: "正解！ +10点",
         player: socket.id,
       });
     } else {
       room.scores[socket.id] -= 10;
       room.locked.add(socket.id);
-      io.to(roomId).emit("result", {
+      io.to("defaultRoom").emit("result", {
         message: "不正解… -10点",
         player: socket.id,
       });
     }
 
     room.buzzed = null;
-    io.to(roomId).emit("players_update", {
+    io.to("defaultRoom").emit("players_update", {
       players: room.players.map((id) => ({
         id,
         name: room.info[id].name,
@@ -168,7 +174,7 @@ socket.on("selectGenre", ({ room, genre }) => {
 
     const winner = Object.entries(room.scores).find(([_, s]) => s >= 50);
     if (winner) {
-      io.to(roomId).emit("result", {
+      io.to("defaultRoom").emit("result", {
         message: `🎉 勝者決定！${room.info[winner[0]].name} が50点達成 🎉`,
         player: winner[0],
       });
@@ -179,9 +185,9 @@ socket.on("selectGenre", ({ room, genre }) => {
       room.current++;
       room.locked.clear();
       if (room.current < room.questions.length) {
-        setTimeout(() => sendQuestion(roomId), 1500);
+        setTimeout(() => sendQuestion("defaultRoom"), 1500);
       } else {
-        io.to(roomId).emit("result", {
+        io.to("defaultRoom").emit("result", {
           message: "クイズ終了！",
           player: null,
         });

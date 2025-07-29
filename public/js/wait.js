@@ -1,49 +1,51 @@
 const socket = io();
-const isHost = sessionStorage.getItem("isHost") === "true";
-const avatar = sessionStorage.getItem("playerAvatar") || "default.png";
-const roomId = localStorage.getItem("roomId") || "defaultRoom";
+const selfAvatar = document.getElementById("selfAvatar");
+const opponentAvatar = document.getElementById("opponentAvatar");
+const selfPoint = document.getElementById("selfPoint");
+const opponentPoint = document.getElementById("opponentPoint");
+const playerCount = document.getElementById("playerCount");
+const startButton = document.getElementById("startButton");
 
-// ルーム参加通知（アバター情報付き）
-socket.emit("join_room", {
-  roomId,
-  avatar: avatar
+let isHost = localStorage.getItem("isHost") === "true";
+let avatar = localStorage.getItem("avatar") || "avatar01.png";
+let playerName = localStorage.getItem("playerName") || "名無し";
+
+socket.emit("joinRoom", { avatar, playerName });
+
+socket.on("updatePlayers", (players) => {
+  playerCount.textContent = `${players.length}/2`;
+
+  if (players.length === 2) {
+    const self = players.find((p) => p.id === socket.id);
+    const opponent = players.find((p) => p.id !== socket.id);
+
+    if (self) {
+      selfAvatar.src = `/images/${self.avatar}`;
+      selfPoint.textContent = self.point;
+    }
+
+    if (opponent) {
+      opponentAvatar.src = `/images/${opponent.avatar}`;
+      opponentPoint.textContent = opponent.point;
+    }
+
+    if (isHost) {
+      startButton.style.display = "block";
+    }
+  }
 });
 
-// 出題開始ボタン表示（ホストのみ）
-if (isHost) {
-  document.getElementById("start-button").style.display = "block";
-  document.getElementById("start-button").addEventListener("click", () => {
-    socket.emit("start_genre", roomId);
-  });
-}
+startButton.addEventListener("click", () => {
+  if (!isHost) return;
 
-// プレイヤー情報更新
-socket.on("players_update", ({ players, count }) => {
-  const list = document.getElementById("player-list");
-  const countDiv = document.getElementById("player-count");
-  // 例: プレイヤー情報を受け取ったとき
-const avatar1 = playerData1.avatar; // e.g., avatar01.png
-const avatar2 = playerData2.avatar;
+  const genres = ["anime", "zatsu", "kihon"];
+  const selectedGenre = genres[Math.floor(Math.random() * genres.length)];
+  localStorage.setItem("genre", selectedGenre);
 
-document.getElementById("player1Avatar").src = `/images/${avatar1}`;
-document.getElementById("player2Avatar").src = `/images/${avatar2}`;
-
-
-  countDiv.textContent = count;
-  list.innerHTML = "";
-
-  players.forEach(p => {
-    const div = document.createElement("div");
-    div.innerHTML = `
-      <img src="images/${p.avatar}" width="60" height="60"><br>
-      <strong>${p.name}</strong><br>
-      ポイント：${p.score}
-    `;
-    list.appendChild(div);
-  });
+  socket.emit("genreSelected", selectedGenre);
 });
 
-// ジャンル画面へ遷移
-socket.on("go_genre", () => {
-  window.location.href = "/genre.html";
+socket.on("genreSelected", (genre) => {
+  localStorage.setItem("genre", genre);
+  window.location.href = "genre.html";
 });

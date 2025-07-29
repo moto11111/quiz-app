@@ -1,19 +1,26 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>ジャンル選択</title>
-  <link rel="stylesheet" href="css/genre.css">
-  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body {
+      background-image: url("images/bg_classroom.jpg");
+      background-size: cover;
+      font-family: sans-serif;
+      text-align: center;
+      padding-top: 100px;
+    }
+    #genreImage {
+      width: 300px;
+      margin-top: 40px;
+    }
+  </style>
 </head>
 <body>
-<body>
   <h2>ジャンルを選んでいます...</h2>
-  <img id="genreImage" src="" alt="ジャンル画像" style="width: 300px; display: block; margin: 20px auto;" />
+  <img id="genreImage" src="" alt="ジャンル画像" />
   <script src="/socket.io/socket.io.js"></script>
   <script src="js/genre.js"></script>
-</body>
-
-
 </body>
 </html>
