@@ -1,34 +1,26 @@
 const socket = io();
-const genreImage = document.getElementById("genreImage");
+const room = "defaultRoom";
 
-let isHost = localStorage.getItem("isHost") === "true";
-
-// ホストがジャンルをランダムに決定して送信
-if (isHost) {
+// ホストだけがジャンルをランダムに決定
+if (localStorage.getItem("isHost") === "true") {
   const genres = ["anime", "kihon", "zatsu"];
-  const selected = genres[Math.floor(Math.random() * genres.length)];
-  localStorage.setItem("genre", selected);
-  socket.emit("genreSelected", selected);
-} else {
-  // ゲストはサーバーからジャンル受信を待機
-  socket.on("genreSelected", (genre) => {
-    localStorage.setItem("genre", genre);
-    showGenreImage(genre);
-    setTimeout(() => {
-      window.location.href = "quiz.html";
-    }, 2000);
-  });
+  const selectedGenre = genres[Math.floor(Math.random() * genres.length)];
+
+  // サーバーに送信
+  socket.emit("selectGenre", { room, genre: selectedGenre });
 }
 
-// ホストも画像を表示して自動遷移（再受信に備えて）
 socket.on("genreSelected", (genre) => {
-  localStorage.setItem("genre", genre);
-  showGenreImage(genre);
+  console.log("ジャンル決定:", genre);
+  localStorage.setItem("selectedGenre", genre);
+
+  // 画像を表示
+  const genreImage = document.getElementById("genreImage");
+  genreImage.src = `/images/genre_${genre}.png`;
+  genreImage.alt = genre;
+
+  // 遷移
   setTimeout(() => {
     window.location.href = "quiz.html";
   }, 2000);
 });
-
-function showGenreImage(genre) {
-  genreImage.src = `/images/genre_${genre}.png`;
-}
